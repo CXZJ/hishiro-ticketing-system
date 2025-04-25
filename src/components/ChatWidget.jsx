@@ -1,6 +1,9 @@
 // src/components/ChatWidget.jsx
-import React, { useState } from 'react';
-import { ChatBubbleOvalLeftEllipsisIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import React, { useState } from "react";
+import {
+  ChatBubbleOvalLeftEllipsisIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/solid";
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -10,10 +13,10 @@ export default function ChatWidget() {
       {/* Chat Button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-50 rounded-full bg-blue-600 p-4 shadow-lg hover:bg-blue-700 focus:outline-none"
+        className="fixed bottom-4 right-4 z-50 rounded-full bg-black p-5 shadow-lg hover:bg-blue-700 focus:outline-none"
         aria-label="Open chat"
       >
-        <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6 text-white" />
+        <ChatBubbleOvalLeftEllipsisIcon className="h-7 w-7 text-white" />
       </button>
 
       {/* Chat Popup */}
@@ -21,7 +24,10 @@ export default function ChatWidget() {
         <div className="fixed bottom-20 right-4 z-50 w-80 max-w-xs rounded-lg bg-white shadow-xl">
           <div className="flex items-center justify-between border-b px-4 py-2">
             <h4 className="text-lg font-semibold">Live Chat</h4>
-            <button onClick={() => setOpen(false)} className="p-1 focus:outline-none">
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1 focus:outline-none"
+            >
               <XMarkIcon className="h-5 w-5 text-gray-600" />
             </button>
           </div>
@@ -29,7 +35,9 @@ export default function ChatWidget() {
             {/* Chat messages area */}
             <div className="h-40 overflow-y-auto rounded border px-2 py-1 text-sm text-gray-700">
               {/* Placeholder content */}
-              <p className="mb-2">Support: Hi there! How can we help you today?</p>
+              <p className="mb-2">
+                Support: Hi there! How can we help you today?
+              </p>
             </div>
             {/* Input area */}
             <div className="mt-3 flex">

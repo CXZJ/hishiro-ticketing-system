@@ -10,7 +10,6 @@ import 'swiper/css/navigation';
 import bg from '../assets/background-scaled.png';
 
 const slides = [
-  // Only unique entries—no repeats here
   { title: 'Shop Now',      img: '/slide1.png' },
   { title: 'New Arrivals',  img: '/slide2.png' },
   { title: 'Limited Edition', img: '/slide3.png' },
@@ -39,13 +38,9 @@ export default function Slider() {
         effect="coverflow"
         grabCursor
         centeredSlides
-
-        // keep your auto width & fixed dimensions
         slidesPerView="auto"               
-
         spaceBetween={30}
-        loop={true}                         // infinite loop :contentReference[oaicite:1]{index=1}
-
+        loop={true}                         
         autoplay={{ delay: 3000, disableOnInteraction: false }}
         navigation
         speed={900}

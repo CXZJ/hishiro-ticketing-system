@@ -1,9 +1,8 @@
-/* Let the slides overflow so peeks are visible */
+
 .slider-container .slick-list {
     overflow: visible;
   }
   
-  /* Base inner slide: 350px tall */
   .slider-container .slide-inner {
     position: relative;
     height: 350px;
@@ -11,7 +10,6 @@
     transition: height 0.7s ease, transform 0.7s ease, opacity 0.7s ease;
   }
   
-  /* Make the center slide taller, larger & fully opaque */
   .slider-container .slick-center .slide-inner {
     height: 450px !important;
     transform: scale(1.05) !important;

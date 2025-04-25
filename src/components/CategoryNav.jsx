@@ -18,7 +18,7 @@ export default function CategoryNav() {
         <ul className="flex justify-center space-x-10 py-4">
           {categories.map(cat => (
             <li key={cat}>
-              <button className="text-gray-700 hover:text-black font-medium whitespace-nowrap">
+              <button className="text-black hover:text-black font-bold whitespace-nowrap">
                 {cat}
               </button>
             </li>

@@ -5,7 +5,7 @@ import CategoryNav from './components/CategoryNav';
 import Slider from './components/Slider';
 import ProductList from './components/ProductList';
 import Footer from './components/Footer';
-import ChatWidget from './components/ChatWidget';  // ← import your chat widget
+import ChatWidget from './components/ChatWidget';  
 
 export default function App() {
   return (
@@ -17,7 +17,7 @@ export default function App() {
         <ProductList />
       </main>
       <Footer />
-      <ChatWidget />   {/* ← render it here so it floats on top */}
+      <ChatWidget />  
     </>
   );
 }
