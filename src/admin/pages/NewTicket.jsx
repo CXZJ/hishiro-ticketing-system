@@ -19,7 +19,6 @@ export default function NewTicket() {
         body: JSON.stringify({ email, type, priority, body }),
       });
       if (!res.ok) throw new Error('Network error');
-      // after success, go back to list
       nav('/admin/tickets');
     } catch (err) {
       alert('Failed to create ticket: ' + err.message);
@@ -55,10 +54,10 @@ export default function NewTicket() {
             className="border p-2 rounded"
             required
           >
-            <option value="">Select Status</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="">Select Priority</option>
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
           </select>
         </div>
         <textarea

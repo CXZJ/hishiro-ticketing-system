@@ -1,19 +1,31 @@
+// src/admin/ui/Sidebar.jsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, TicketIcon, UsersIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import {
+  HomeIcon,
+  TicketIcon,
+  UsersIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline';
+import logo from '../../assets/logo.png';
 
 export default function Sidebar() {
   const links = [
-    { to: '/admin',        icon: HomeIcon,      label: 'Dashboard' },
-    { to: '/admin/tickets',icon: TicketIcon,    label: 'Tickets'   },
-    { to: '/admin/users',  icon: UsersIcon,     label: 'Users'     },
-    { to: '/admin/settings',icon: Cog6ToothIcon,label: 'Settings'  },
+    { to: '/admin',         icon: HomeIcon,      label: 'Dashboard' },
+    { to: '/admin/tickets', icon: TicketIcon,    label: 'Tickets'   },
+    { to: '/admin/users',   icon: UsersIcon,     label: 'Users'     },
+    { to: '/admin/settings',icon: Cog6ToothIcon, label: 'Settings'  },
   ];
 
   return (
-    <aside className="w-60 bg-white border-r">
-      <div className="p-4 text-xl font-bold">TICKET LEAD</div>
-      <nav className="mt-4">
+    <aside className="w-60 bg-white border-r flex flex-col">
+      <div className="flex justify-center p-4">
+        <img src={logo} alt="Ticket Lead Logo" className="h-10 w-auto" />
+      </div>
+
+
+      {/* Navigation Links */}
+      <nav className="flex-1">
         {links.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
