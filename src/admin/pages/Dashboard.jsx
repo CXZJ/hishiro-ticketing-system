@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../ui/AdminLayout';
+import AdminLayout from '../UI/AdminLayout';
+import AdminChat from '../components/AdminChat';
 
 export default function Dashboard() {
   // optional: fetch real stats
@@ -24,7 +25,7 @@ export default function Dashboard() {
     <AdminLayout>
       <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-6 mb-8">
         <div className="p-4 bg-white rounded shadow">
           <p className="text-sm text-gray-500">Total Tickets</p>
           <p className="text-3xl font-bold">{stats.total}</p>
@@ -40,6 +41,9 @@ export default function Dashboard() {
           <p className="text-3xl font-bold">{stats.resolved}</p>
         </div>
       </div>
+
+      {/* Admin Chat Panel */}
+      <AdminChat />
     </AdminLayout>
   );
 }
