@@ -7,6 +7,7 @@ import Slider       from './components/Slider';
 import ProductList  from './components/ProductList';
 import Footer       from './components/Footer';
 import ChatWidget   from './components/ChatWidget';
+import ChatPage     from './components/ChatPage';
 
 import Login        from './auth/Login';
 import SignUp       from './auth/SignUp';
@@ -37,6 +38,9 @@ export default function App() {
         {/* Public auth */}
         <Route path="/login"  element={<Login  />} />
         <Route path="/signup" element={<SignUp />} />
+
+        {/* Full‐page chat */}
+        <Route path="/chat" element={<ChatPage />} />
 
         {/* Client storefront */}
         <Route path="/" element={<ClientLayout />} />
