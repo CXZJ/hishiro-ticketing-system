@@ -1,13 +1,13 @@
 // src/components/Footer.jsx
 import React from "react";
 import { PhoneIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
-import { FaInstagram, FaTiktok, FaWhatsapp } from "react-icons/fa";
+import { FaInstagram, FaTiktok } from "react-icons/fa";
 import logo from "../assets/logo-white.png";
 
 export default function Footer() {
   return (
-    <footer className="bg-black text-white relative">
-      <div className="max-w-screen-xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-7 gap-8">
+    <footer className="bg-black text-white">
+      <div className="max-w-screen-xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-8">
         {/* Logo & Contact (2/7) */}
         <div className="md:col-span-2">
           <img src={logo} alt="Hishiro Logo" className="h-20 mb-4" />

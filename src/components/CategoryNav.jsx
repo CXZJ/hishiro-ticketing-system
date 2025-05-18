@@ -1,5 +1,4 @@
-// src/components/CategoryNav.jsx
-import React from 'react';
+import React from 'react'
 
 const categories = [
   'All',
@@ -9,22 +8,40 @@ const categories = [
   'Sweaters & Hoodies',
   'Bags',
   'Archives',
-];
+]
 
-export default function CategoryNav() {
+/**
+ * @param {'horizontal'|'vertical'} [orientation='horizontal']
+ * @param {string} [className='']
+ */
+export default function CategoryNav({
+  orientation = 'horizontal',
+  className = '',
+}) {
+  const isVertical = orientation === 'vertical'
+
   return (
-    <nav className="bg-white border-b">
-      <div className="container mx-auto px-6">
-        <ul className="flex justify-center space-x-10 py-4">
-          {categories.map(cat => (
-            <li key={cat}>
-              <button className="text-black hover:text-black font-bold whitespace-nowrap">
-                {cat}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+    <nav className={className}>
+      <ul
+        className={
+          isVertical
+            ? 'flex flex-col divide-y divide-gray-200'
+            : 'flex justify-center space-x-8'
+        }
+      >
+        {categories.map(cat => (
+          <li
+            key={cat}
+            className={
+              isVertical
+                ? 'w-full py-4 text-center text-base'
+                : 'text-sm'
+            }
+          >
+            <button className="hover:underline">{cat}</button>
+          </li>
+        ))}
+      </ul>
     </nav>
-  );
+  )
 }
