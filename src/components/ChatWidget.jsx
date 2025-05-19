@@ -7,6 +7,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { io } from "socket.io-client";
 import customerSupportIcon from "../assets/customer-support.png";
+import { generateBotResponse } from "../services/geminiService";
 
 export default function ChatWidget({ fullPage = false, hideHeader = false }) {
   const [open, setOpen] = useState(fullPage);
@@ -14,53 +15,179 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
   const [messages, setMessages] = useState([
     { from: "support", type: "text", text: "Hi there! How can we help you today?" },
   ]);
-
+  const [isTyping, setIsTyping] = useState(false);
+  const [socketError, setSocketError] = useState(false);
+  const [currentTicket, setCurrentTicket] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const socketRef = useRef(null);
   const endRef = useRef(null);
+  const [isAdminPresent, setIsAdminPresent] = useState(false);
 
   // Socket connection
   useEffect(() => {
-    const sock = io("http://localhost:3000");
-    socketRef.current = sock;
-    sock.on("adminMessage", ({ text, _id }) =>
-      setMessages(prev => [...prev, { from: "support", type: "text", text, id: _id }])
-    );
-    sock.on("chatHistory", history => {
-      if (history?.length) {
-        const hist = history.map(m => ({
-          from: m.isAdmin ? "support" : "user",
-          type: "text",
-          text: m.text,
-          id: m._id,
-        }));
-        setMessages(prev => [prev[0], ...hist]);
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+    const sock = io(API_URL, {
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000,
+    });
+
+    sock.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+      setSocketError(true);
+    });
+
+    sock.on("connect", () => {
+      console.log("Socket connected successfully");
+      setSocketError(false);
+    });
+
+    // Handle ticket creation confirmation
+    sock.on("ticketCreated", (ticket) => {
+      setCurrentTicket(ticket);
+      setMessages(prev => [...prev, {
+        from: 'system',
+        type: 'text',
+        text: 'A support ticket has been created for your issue.',
+        time: new Date().toLocaleTimeString()
+      }]);
+    });
+
+    // Handle ticket messages
+    sock.on("ticketMessage", (data) => {
+      // Only add the message if it's not from the current user
+      if (data.sender !== 'user' || !isAdminPresent) {
+        setMessages(prev => [...prev, {
+          from: data.sender === 'admin' ? 'support' : 'user',
+          type: 'text',
+          text: data.message,
+          time: data.time
+        }]);
       }
     });
+
+    // Handle admin joining
+    sock.on("adminJoined", (data) => {
+      setIsAdminPresent(true);
+      setMessages(prev => [...prev, {
+        from: 'system',
+        type: 'text',
+        text: 'An admin has joined the conversation. The chatbot is now disabled.',
+        time: data.time
+      }]);
+    });
+
+    // Handle user leaving
+    sock.on("userLeft", (data) => {
+      setMessages(prev => [...prev, {
+        from: 'system',
+        type: 'text',
+        text: 'A user has left the conversation.',
+        time: data.time
+      }]);
+    });
+
+    // Handle ticket status updates
+    sock.on("ticketStatusUpdated", (data) => {
+      setMessages(prev => [...prev, {
+        from: 'system',
+        type: 'text',
+        text: `Ticket status updated to: ${data.status}`,
+        time: data.time
+      }]);
+    });
+
+    // Listen for admin left notification
+    sock.on('adminLeft', (data) => {
+      setIsAdminPresent(false);
+      setMessages(prev => [...prev, {
+        from: 'system',
+        type: 'text',
+        text: 'The admin has left. The chatbot is now enabled.',
+        time: data.time
+      }]);
+    });
+
+    socketRef.current = sock;
     return () => sock.disconnect();
   }, []);
+
+  // Join ticket room if ticket exists
+  useEffect(() => {
+    if (currentTicket && socketRef.current) {
+      socketRef.current.emit('joinTicketRoom', currentTicket._id);
+    }
+  }, [currentTicket]);
 
   // Auto-scroll
   useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
 
-  // Send helper
-  const sendText = useCallback(txt => {
-    if (!txt.trim()) return;
-    setMessages(prev => [...prev, { from: "user", type: "text", text: txt }]);
-    socketRef.current?.emit("clientMessage", txt);
-    setTextInput("");
-  }, []);
-
   // FAQ listener
   useEffect(() => {
-    const onFaq = e => sendText(e.detail);
-    window.addEventListener("faq", onFaq);
-    return () => window.removeEventListener("faq", onFaq);
-  }, [sendText]);
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  // Form submit
-  const handleSubmit = e => {
+  const sendMessage = async (txt) => {
+    if (!txt.trim()) return;
+    
+    // Add user message
+    setMessages((prev) => [...prev, { from: "user", type: "text", text: txt }]);
+    
+    // Generate bot response
+    setIsTyping(true);
+    try {
+      const response = await generateBotResponse([...messages, { from: "user", type: "text", text: txt }]);
+      
+      // Add bot response
+      setMessages((prev) => [...prev, { from: "support", type: "text", text: response.text }]);
+      
+      // If ticket is needed, create it
+      if (response.needsTicket) {
+        // Create ticket through socket
+        if (socketRef.current) {
+          socketRef.current.emit("createTicket", {
+            message: txt,
+            botResponse: response.text,
+            timestamp: new Date().toISOString()
+          });
+        }
+      } else if (currentTicket) {
+        // If we're in a ticket chat, send message to ticket room
+        socketRef.current.emit("ticketMessage", {
+          ticketId: currentTicket._id,
+          message: txt,
+          isAdmin: false
+        });
+      }
+    } catch (error) {
+      console.error("Error getting bot response:", error);
+      setMessages((prev) => [
+        ...prev,
+        { from: "support", type: "text", text: "I apologize, but I'm having trouble processing your request right now." },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+    
+    setTextInput("");
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    sendText(textInput);
+    if (!textInput.trim()) return;
+
+    if (isAdminPresent || currentTicket) {
+      // If admin is present or we're in a ticket, send message to ticket room
+      socketRef.current.emit('ticketMessage', {
+        ticketId: currentTicket?._id,
+        message: textInput,
+        isAdmin: false,
+        sender: 'user'  // Add sender information
+      });
+    } else {
+      sendMessage(textInput);
+    }
+
+    setTextInput('');
   };
 
   // Image upload
@@ -135,6 +262,13 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
                 )}
               </div>
             ))}
+            {isTyping && (
+              <div className="mb-2">
+                <span className="inline-block rounded-lg px-3 py-1.5 bg-gray-200 text-gray-800">
+                  Typing...
+                </span>
+              </div>
+            )}
             <div ref={endRef} />
           </div>
 
@@ -160,13 +294,14 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
               type="text"
               value={textInput}
               onChange={e => setTextInput(e.target.value)}
-              placeholder="Type your message…"
+              placeholder={isAdminPresent ? "Chat with admin..." : "Ask me anything..."}
               className="flex-grow min-w-0 bg-gray-100 px-4 py-2 rounded-xl focus:outline-none"
             />
 
             <button
               type="submit"
-              className="flex-shrink-0 bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 focus:outline-none"
+              className="flex-shrink-0 bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 focus:outline-none disabled:bg-gray-400"
+              disabled={isTyping}
             >
               Send
             </button>

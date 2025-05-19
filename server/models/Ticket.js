@@ -2,17 +2,21 @@ import mongoose from 'mongoose';
 
 const ticketSchema = mongoose.Schema(
   {
-    title: {
+    userId: {
       type: String,
-      required: [true, 'Please add a title'],
+      required: true,
     },
-    description: {
+    message: {
       type: String,
-      required: [true, 'Please add a description'],
+      required: true,
+    },
+    botResponse: {
+      type: String,
+      required: true,
     },
     status: {
       type: String,
-      enum: ['new', 'open', 'closed'],
+      enum: ['new', 'in-progress', 'resolved', 'closed'],
       default: 'new',
     },
     priority: {
@@ -20,15 +24,18 @@ const ticketSchema = mongoose.Schema(
       enum: ['low', 'medium', 'high'],
       default: 'medium',
     },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
     assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,
+      default: null,
     },
+    notes: [{
+      text: String,
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+      createdBy: String,
+    }],
   },
   {
     timestamps: true,

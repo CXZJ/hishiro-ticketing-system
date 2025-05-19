@@ -2,9 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply bg-white text-gray-900;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
 .swiper-button-next,
 .swiper-button-prev {
   color: #ffffff;
   width: 2.5rem;
   height: 2.5rem;
+}
+
+/* Add some basic styles for the chat widget */
+.chat-widget {
+  @apply fixed bottom-4 right-4 z-50;
+}
+
+/* Add styles for the main content */
+main {
+  @apply min-h-screen py-8;
 }

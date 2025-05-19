@@ -7,6 +7,7 @@ import { connectDB } from './config/db.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 import ticketRoutes from './routes/ticketRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import Ticket from './models/Ticket.js';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +36,9 @@ app.use('/api/users', userRoutes);
 // Error handler
 app.use(errorHandler);
 
+// Store active ticket rooms
+const activeTicketRooms = new Map();
+
 // Socket.IO
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
@@ -51,8 +55,145 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Handle ticket creation
+  socket.on('createTicket', async (ticketData) => {
+    try {
+      console.log('Creating ticket:', ticketData);
+      
+      // Create ticket in MongoDB
+      const ticket = await Ticket.create({
+        userId: socket.id,
+        message: ticketData.message,
+        botResponse: ticketData.botResponse,
+        status: 'new',
+        priority: 'medium'
+      });
+
+      // Create a room for this ticket
+      const ticketRoom = `ticket_${ticket._id}`;
+      activeTicketRooms.set(ticket._id.toString(), {
+        ticketId: ticket._id,
+        userId: socket.id,
+        adminId: null
+      });
+
+      // Join the ticket room
+      socket.join(ticketRoom);
+      
+      // Notify the user that their ticket was created
+      socket.emit('ticketCreated', {
+        _id: ticket._id,
+        status: ticket.status,
+        message: ticketData.message,
+        botResponse: ticketData.botResponse
+      });
+      
+      // Broadcast new ticket to admin
+      io.emit('newTicket', {
+        ...ticket.toObject(),
+        id: socket.id,
+        roomId: ticketRoom,
+        createdAt: new Date().toISOString()
+      });
+      
+      console.log('Ticket created successfully:', ticket);
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      socket.emit('ticketError', { message: 'Failed to create ticket' });
+    }
+  });
+
+  // Handle joining ticket room (for admin)
+  socket.on('joinTicketRoom', (ticketId) => {
+    const ticketRoom = `ticket_${ticketId}`;
+    const ticketInfo = activeTicketRooms.get(ticketId);
+    
+    if (ticketInfo) {
+      socket.join(ticketRoom);
+      ticketInfo.adminId = socket.id;
+      activeTicketRooms.set(ticketId, ticketInfo);
+      
+      // Notify user that admin has joined
+      io.to(ticketRoom).emit('adminJoined', {
+        ticketId,
+        adminId: socket.id,
+        time: new Date().toLocaleTimeString()
+      });
+    }
+  });
+
+  // Handle ticket messages
+  socket.on('ticketMessage', async (data) => {
+    const { ticketId, message, isAdmin } = data;
+    const ticketRoom = `ticket_${ticketId}`;
+    const ticketInfo = activeTicketRooms.get(ticketId);
+
+    if (ticketInfo) {
+      // Add message to ticket notes
+      await Ticket.findByIdAndUpdate(ticketId, {
+        $push: {
+          notes: {
+            text: message,
+            createdBy: isAdmin ? 'admin' : 'user'
+          }
+        }
+      });
+
+      // Broadcast message to room
+      io.to(ticketRoom).emit('ticketMessage', {
+        ticketId,
+        message,
+        sender: isAdmin ? 'admin' : 'user',
+        time: new Date().toLocaleTimeString()
+      });
+    }
+  });
+
+  // Handle ticket status updates
+  socket.on('updateTicketStatus', async (data) => {
+    const { ticketId, status } = data;
+    const ticketRoom = `ticket_${ticketId}`;
+    
+    try {
+      const updatedTicket = await Ticket.findByIdAndUpdate(
+        ticketId,
+        { status },
+        { new: true }
+      );
+
+      if (updatedTicket) {
+        io.to(ticketRoom).emit('ticketStatusUpdated', {
+          ticketId,
+          status,
+          time: new Date().toLocaleTimeString()
+        });
+      }
+    } catch (error) {
+      console.error('Error updating ticket status:', error);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    
+    // Clean up ticket rooms
+    for (const [ticketId, info] of activeTicketRooms.entries()) {
+      if (info.userId === socket.id || info.adminId === socket.id) {
+        const ticketRoom = `ticket_${ticketId}`;
+        io.to(ticketRoom).emit('userLeft', {
+          ticketId,
+          userId: socket.id,
+          time: new Date().toLocaleTimeString()
+        });
+        
+        if (info.userId === socket.id) {
+          activeTicketRooms.delete(ticketId);
+        } else {
+          info.adminId = null;
+          activeTicketRooms.set(ticketId, info);
+        }
+      }
+    }
   });
 });
 
