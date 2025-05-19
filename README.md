@@ -27,9 +27,14 @@ npm install
 3. Environment Setup
 Create a `.env` file in the root directory with the following variables:
 ```
+﻿# Backend Environment Variables
 PORT=5001
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
+MONGO_URI=your_mongodb_link
+JWT_SECRET=your_jwt_secret
+
+# Frontend Environment Variables
+VITE_API_URL=http://localhost:5001
+VITE_GEMINI_API_KEY=your_gemini_api_key(must_be_for_gemini2.0_flash)
 ```
 
 ## Running the Application
