@@ -1,78 +1,47 @@
 // src/components/ChatPage.jsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import ChatWidget from "./ChatWidget";
 
 export default function ChatPage() {
   const navigate = useNavigate();
+  const { ticketId } = useParams();
   const [showFaq, setShowFaq] = useState(false);
+  const [faqs] = useState([
+    "What are your shipping options?",
+    "How do I track my order?",
+    "What is your return policy?",
+    "How do I contact customer support?",
+  ]);
 
-  const faqs = [
-    "What payment methods are available?",
-    "How can I track my order?",
-    "When will my items ship?",
-    "How do I return an item?",
-    "Can I cancel my order?",
-    "Do you offer international shipping?",
-    "How do I apply a discount code?",
-    "What is your warranty policy?",
-    // ...more FAQs
-  ];
-
-  const ask = q => {
-    window.dispatchEvent(new CustomEvent("faq", { detail: q }));
+  const ask = (question) => {
+    // Handle FAQ question
     setShowFaq(false);
   };
 
   return (
-    <div className="h-screen flex bg-gray-50 overflow-hidden">
-      {/* FAQ Drawer */}
+    <div className="flex h-screen bg-gray-50">
+      {/* FAQ Sidebar */}
       <aside
-        className={`
-          fixed inset-y-0 left-0 z-50 w-3/4 max-w-xs
-          bg-white p-6 space-y-6
-          overflow-y-auto h-full
-          transform transition-transform duration-200
-          ${showFaq ? "translate-x-0" : "-translate-x-full"}
-          md:static md:translate-x-0 md:block
-        `}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${
+          showFaq ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        {/* Close button (mobile only), on left with label */}
-        <div className="md:hidden mb-4">
-          <button
-            onClick={() => setShowFaq(false)}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-          >
-            <XMarkIcon className="h-6 w-6" />
-            <span className="font-medium">Close</span>
-          </button>
+        <div className="p-4">
+          <h2 className="text-lg font-semibold mb-4">Frequently Asked Questions</h2>
+          <div className="space-y-2">
+            {faqs.map(q => (
+              <button
+                key={q}
+                onClick={() => ask(q)}
+                className="block w-full text-left rounded border px-4 py-2 hover:bg-gray-100"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
         </div>
-
-        <h2 className="text-2xl font-semibold">Chat with Support</h2>
-        <h3 className="mt-4 text-lg font-medium">FAQs</h3>
-
-        <div className="space-y-2">
-          {faqs.map(q => (
-            <button
-              key={q}
-              onClick={() => ask(q)}
-              className="block w-full text-left rounded border px-4 py-2 hover:bg-gray-100"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={() => {
-            navigate("/tickets/new");
-            setShowFaq(false);
-          }}
-          className="mt-8 w-full rounded bg-black text-white px-4 py-2 hover:bg-gray-800"
-        >
-          Request Ticket
-        </button>
       </aside>
 
       {/* Backdrop */}
@@ -96,7 +65,9 @@ export default function ChatPage() {
           </button>
 
           {/* Title */}
-          <h1 className="text-xl font-semibold">Help Desk</h1>
+          <h1 className="text-xl font-semibold">
+            {ticketId ? `Support Ticket #${ticketId}` : 'Help Desk'}
+          </h1>
 
           {/* Close (X) on right */}
           <button
@@ -109,7 +80,7 @@ export default function ChatPage() {
         </header>
 
         {/* Embedded chat widget */}
-        <ChatWidget fullPage hideHeader />
+        <ChatWidget fullPage hideHeader ticketId={ticketId} />
       </div>
     </div>
   );

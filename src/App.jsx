@@ -43,6 +43,7 @@ export default function App() {
 
         {/* Full-page chat */}
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/chat/:ticketId" element={<ChatPage />} />
 
         {/* Client storefront */}
         <Route path="/" element={<ClientLayout />} />

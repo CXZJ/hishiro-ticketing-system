@@ -9,11 +9,11 @@ import { io } from "socket.io-client";
 import customerSupportIcon from "../assets/customer-support.png";
 import { generateBotResponse } from "../services/geminiService";
 
-export default function ChatWidget({ fullPage = false, hideHeader = false }) {
+export default function ChatWidget({ fullPage = false, hideHeader = false, ticketId = null }) {
   const [open, setOpen] = useState(fullPage);
   const [textInput, setTextInput] = useState("");
   const [messages, setMessages] = useState([
-    { from: "support", type: "text", text: "Hi there! How can we help you today?" },
+    { from: "support", type: "text", text: fullPage ? "Please wait until our admin joins this conversation." : "Hi there! How can we help you today?" },
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [socketError, setSocketError] = useState(false);
@@ -44,20 +44,24 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
     // Handle ticket creation confirmation
     sock.on("ticketCreated", (ticket) => {
       setCurrentTicket(ticket);
+      // Provide a link to communicate with admin after the ticket is created
       setMessages(prev => [...prev, {
         from: 'system',
         type: 'text',
-        text: 'A support ticket has been created for your issue.',
-        time: new Date().toLocaleTimeString()
+        text: `A support ticket has been created for your issue. Please click here to continue the conversation with our support team.`,
+        time: new Date().toLocaleTimeString(),
+        isLink: true,
+        linkUrl: `/chat/${ticket._id}`
       }]);
     });
 
     // Handle ticket messages
     sock.on("ticketMessage", (data) => {
-      // Only add the message if it's not from the current user
-      if (data.sender !== 'user' || !isAdminPresent) {
+      // Only add messages if we are in the full page ticket chat and the ticketId matches,
+      // AND the message was not sent by the current user.
+      if (fullPage && (ticketId === data.ticketId) && data.sender !== 'user') {
         setMessages(prev => [...prev, {
-          from: data.sender === 'admin' ? 'support' : 'user',
+          from: data.sender === 'admin' ? 'support' : data.sender,
           type: 'text',
           text: data.message,
           time: data.time
@@ -68,55 +72,81 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
     // Handle admin joining
     sock.on("adminJoined", (data) => {
       setIsAdminPresent(true);
-      setMessages(prev => [...prev, {
-        from: 'system',
-        type: 'text',
-        text: 'An admin has joined the conversation. The chatbot is now disabled.',
-        time: data.time
-      }]);
+      // Only show admin joined message on the full page
+      if (fullPage) {
+        setMessages(prev => [...prev, {
+          from: 'system',
+          type: 'text',
+          text: 'An admin has joined the conversation.',
+          time: data.time
+        }]);
+      }
     });
 
     // Handle user leaving
     sock.on("userLeft", (data) => {
-      setMessages(prev => [...prev, {
-        from: 'system',
-        type: 'text',
-        text: 'A user has left the conversation.',
-        time: data.time
-      }]);
+      // Only show user left message on the full page
+      if (fullPage) {
+        setMessages(prev => [...prev, {
+          from: 'system',
+          type: 'text',
+          text: 'A user has left the conversation.',
+          time: data.time
+        }]);
+      }
     });
 
     // Handle ticket status updates
     sock.on("ticketStatusUpdated", (data) => {
-      setMessages(prev => [...prev, {
-        from: 'system',
-        type: 'text',
-        text: `Ticket status updated to: ${data.status}`,
-        time: data.time
-      }]);
+      // Only show status updates on the full page
+      if (fullPage) {
+        setMessages(prev => [...prev, {
+          from: 'system',
+          type: 'text',
+          text: `Ticket status updated to: ${data.status}`,
+          time: data.time
+        }]);
+      }
     });
 
     // Listen for admin left notification
     sock.on('adminLeft', (data) => {
       setIsAdminPresent(false);
-      setMessages(prev => [...prev, {
-        from: 'system',
-        type: 'text',
-        text: 'The admin has left. The chatbot is now enabled.',
-        time: data.time
-      }]);
+      // Only show admin left message on the full page
+      if (fullPage) {
+        setMessages(prev => [...prev, {
+          from: 'system',
+          type: 'text',
+          text: 'The admin has left converstation.',
+          time: data.time
+        }]);
+      }
     });
 
     socketRef.current = sock;
     return () => sock.disconnect();
   }, []);
 
-  // Join ticket room if ticket exists
+  // Join ticket room if ticket exists or if ticketId prop is provided
   useEffect(() => {
-    if (currentTicket && socketRef.current) {
-      socketRef.current.emit('joinTicketRoom', currentTicket._id);
+    if ((currentTicket || ticketId) && socketRef.current) {
+      const ticketToJoin = ticketId || currentTicket._id;
+      
+      // If on the full page and have a ticketId, the user should join the room
+      if (fullPage && ticketId) {
+        socketRef.current.emit('userJoinTicketRoom', ticketId);
+        console.log('Emitting userJoinTicketRoom for ticket:', ticketId);
+      } else if (currentTicket) {
+           // Existing logic for admin/system joining, if applicable
+          socketRef.current.emit('joinTicketRoom', ticketToJoin); // Keep existing for admin/system
+      }
+      
+      // If we have a ticketId prop, set it as the current ticket for display purposes
+      if (ticketId && !currentTicket) {
+        setCurrentTicket({ _id: ticketId });
+      }
     }
-  }, [currentTicket]);
+  }, [currentTicket, ticketId, fullPage]); // Added fullPage to dependencies
 
   // Auto-scroll
   useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
@@ -132,40 +162,44 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
     // Add user message
     setMessages((prev) => [...prev, { from: "user", type: "text", text: txt }]);
     
-    // Generate bot response
-    setIsTyping(true);
-    try {
-      const response = await generateBotResponse([...messages, { from: "user", type: "text", text: txt }]);
-      
-      // Add bot response
-      setMessages((prev) => [...prev, { from: "support", type: "text", text: response.text }]);
-      
-      // If ticket is needed, create it
-      if (response.needsTicket) {
-        // Create ticket through socket
-        if (socketRef.current) {
-          socketRef.current.emit("createTicket", {
-            message: txt,
-            botResponse: response.text,
-            timestamp: new Date().toISOString()
-          });
+    // Only allow chat messages in full chat page
+    if (fullPage && (currentTicket || ticketId)) {
+      console.log('Attempting to emit ticketMessage from full page:', { ticketId: ticketId || currentTicket?._id, message: txt });
+      socketRef.current.emit("ticketMessage", {
+        ticketId: ticketId || currentTicket._id,
+        message: txt,
+        isAdmin: false,
+        sender: 'user'
+      });
+    } else {
+      // Generate bot response
+      setIsTyping(true);
+      try {
+        const response = await generateBotResponse([...messages, { from: "user", type: "text", text: txt }]);
+        
+        // Add bot response
+        setMessages((prev) => [...prev, { from: "support", type: "text", text: response.text }]);
+        
+        // If ticket is needed, create it
+        if (response.needsTicket) {
+          // Create ticket through socket
+          if (socketRef.current) {
+            socketRef.current.emit("createTicket", {
+              message: txt,
+              botResponse: response.text,
+              timestamp: new Date().toISOString()
+            });
+          }
         }
-      } else if (currentTicket) {
-        // If we're in a ticket chat, send message to ticket room
-        socketRef.current.emit("ticketMessage", {
-          ticketId: currentTicket._id,
-          message: txt,
-          isAdmin: false
-        });
+      } catch (error) {
+        console.error("Error getting bot response:", error);
+        setMessages((prev) => [
+          ...prev,
+          { from: "support", type: "text", text: "I apologize, but I'm having trouble processing your request right now." },
+        ]);
+      } finally {
+        setIsTyping(false);
       }
-    } catch (error) {
-      console.error("Error getting bot response:", error);
-      setMessages((prev) => [
-        ...prev,
-        { from: "support", type: "text", text: "I apologize, but I'm having trouble processing your request right now." },
-      ]);
-    } finally {
-      setIsTyping(false);
     }
     
     setTextInput("");
@@ -175,14 +209,23 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
     e.preventDefault();
     if (!textInput.trim()) return;
 
-    if (isAdminPresent || currentTicket) {
-      // If admin is present or we're in a ticket, send message to ticket room
+    // Only allow chat messages in full chat page
+    if (fullPage && (currentTicket || ticketId)) {
+      console.log('Attempting to emit ticketMessage from full page:', { ticketId: ticketId || currentTicket?._id, message: textInput });
       socketRef.current.emit('ticketMessage', {
-        ticketId: currentTicket?._id,
+        ticketId: ticketId || currentTicket?._id,
         message: textInput,
         isAdmin: false,
-        sender: 'user'  // Add sender information
+        sender: 'user'
       });
+      
+      // Add user message to the chat immediately
+      setMessages(prev => [...prev, {
+        from: 'user',
+        type: 'text',
+        text: textInput,
+        time: new Date().toLocaleTimeString()
+      }]);
     } else {
       sendMessage(textInput);
     }
@@ -244,22 +287,35 @@ export default function ChatWidget({ fullPage = false, hideHeader = false }) {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
             {messages.map((msg, i) => (
-              <div key={i} className={msg.from === "user" ? "text-right" : "text-left"}>
-                {msg.type === "image" ? (
-                  <img
-                    src={msg.src}
-                    alt="attachment"
-                    className="inline-block max-w-xs rounded-lg"
-                  />
-                ) : (
-                  <span
-                    className={`inline-block rounded-xl px-3 py-2 sm:px-4 sm:py-2 ${
-                      msg.from === "user" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    {msg.text}
-                  </span>
-                )}
+              <div
+                key={i}
+                className={`flex ${
+                  msg.from === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    msg.from === "user"
+                      ? "bg-black text-white"
+                      : msg.from === "system"
+                      ? "bg-gray-100 text-gray-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {msg.isLink ? (
+                    <a
+                      href={msg.linkUrl}
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {msg.text}
+                    </a>
+                  ) : (
+                    msg.text
+                  )}
+                  {msg.time && (
+                    <div className="text-xs opacity-75 mt-1">{msg.time}</div>
+                  )}
+                </div>
               </div>
             ))}
             {isTyping && (

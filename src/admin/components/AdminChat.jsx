@@ -26,7 +26,8 @@ export default function AdminChat() {
 
     // Listen for ticket messages
     newSocket.on('ticketMessage', (data) => {
-      if (selectedTicket && data.ticketId === selectedTicket._id) {
+      console.log('Admin received ticket message:', data);
+      if (selectedTicket && data.ticketId === selectedTicket._id && data.sender !== 'admin') {
         setMessages(prev => [...prev, {
           _id: Math.random().toString(),
           from: data.sender,
@@ -86,8 +87,17 @@ export default function AdminChat() {
       socket.emit('ticketMessage', {
         ticketId: selectedTicket._id,
         message: message,
-        isAdmin: true
+        isAdmin: true,
+        sender: 'admin'
       });
+      
+      // Add message to local state immediately
+      setMessages(prev => [...prev, {
+        _id: Math.random().toString(),
+        from: 'admin',
+        text: message,
+        time: new Date().toLocaleTimeString()
+      }]);
       
       setMessage('');
     }

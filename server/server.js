@@ -122,6 +122,37 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle user joining ticket room
+  socket.on('userJoinTicketRoom', (ticketId) => {
+    const ticketRoom = `ticket_${ticketId}`;
+    const ticketInfo = activeTicketRooms.get(ticketId);
+
+    if (ticketInfo && ticketInfo.userId === socket.id) {
+      socket.join(ticketRoom);
+      console.log(`User ${socket.id} joined ticket room ${ticketRoom}`);
+       // Optionally, notify admin that user rejoined or is present
+       // io.to(ticketRoom).emit('userJoined', { ticketId, userId: socket.id, time: new Date().toLocaleTimeString() });
+    } else if (!ticketInfo) {
+        // If ticketInfo doesn't exist, try to find the ticket in the DB and create a room entry
+        Ticket.findById(ticketId).then(ticket => {
+            if (ticket) {
+                const newTicketInfo = {
+                    ticketId: ticket._id.toString(),
+                    userId: socket.id,
+                    adminId: null
+                };
+                activeTicketRooms.set(ticket._id.toString(), newTicketInfo);
+                socket.join(ticketRoom);
+                console.log(`User ${socket.id} joined newly created ticket room entry ${ticketRoom}`);
+            } else {
+                console.log(`Ticket ${ticketId} not found for user to join.`);
+            }
+        }).catch(error => {
+            console.error('Error finding ticket for user join:', error);
+        });
+    }
+  });
+
   // Handle ticket messages
   socket.on('ticketMessage', async (data) => {
     const { ticketId, message, isAdmin } = data;
