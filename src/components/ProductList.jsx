@@ -229,21 +229,22 @@ export default function ProductList({ limit, heading, search }) {
           {sortedProducts.map((product, index) => (
             <div 
               key={index} 
-              className={`group bg-white relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
+              className={`group bg-white relative overflow-hidden transition-all duration-300 hover:shadow-xl rounded-lg ${
                 isHighlighted(product.title) ? 'ring-2 ring-blue-500 shadow-lg' : ''
               }`}
               id={isHighlighted(product.title) ? 'highlighted-product' : ''}
             >
-              <div className="relative aspect-[3/4] overflow-hidden">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">
                 <div className="w-full h-full transform transition-transform duration-300 group-hover:scale-105">
                   <img
                     src={product.image}
                     alt={product.title}
-                    className={`w-full h-full object-cover ${product.soldOut ? 'opacity-90' : ''}`}
+                    className={`w-full h-full object-cover ${product.soldOut ? 'opacity-80' : ''}`}
+                    style={{objectPosition: "center"}}
                   />
                   {product.soldOut && (
                     <>
-                      <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+                      <div className="absolute inset-0 bg-black bg-opacity-40"></div>
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] transform-gpu">
                         <div className="bg-white/90 backdrop-blur-sm px-6 py-2 rounded-sm border-2 border-black shadow-lg">
                           <span className="text-xl font-bold tracking-wider">SOLD OUT</span>
@@ -252,7 +253,7 @@ export default function ProductList({ limit, heading, search }) {
                     </>
                   )}
                   {product.discount && (
-                    <div className="absolute top-2 left-2 bg-black text-white px-3 py-1 text-sm font-semibold">
+                    <div className="absolute top-3 left-3 bg-black text-white px-3 py-1 text-sm font-semibold rounded-md">
                       {product.discount}
                     </div>
                   )}

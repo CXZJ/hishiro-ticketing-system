@@ -229,10 +229,18 @@ export default function SearchOverlay({ isOpen, onClose }) {
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed left-0 right-0 bottom-0 z-50 bg-white border-t" style={{ top: '150px' }}>
+    <div 
+      className={`fixed left-0 right-0 bottom-0 z-50 bg-white border-t transform transition-all duration-300 ease-in-out ${
+        isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+      }`} 
+      style={{ 
+        top: '165px', 
+        height: 'auto',
+        maxHeight: 'calc(100vh - 150px)',
+        overflowY: 'auto'
+      }}
+    >
       <div className="container mx-auto px-4 md:px-8 py-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-3xl font-medium text-gray-800">Search for Products</h2>
@@ -262,7 +270,13 @@ export default function SearchOverlay({ isOpen, onClose }) {
         )}
         
         {searchQuery && suggestions.length > 0 && (
-          <ul className="mt-4 divide-y divide-gray-100 max-h-80 overflow-y-auto">
+          <ul 
+            className="mt-4 divide-y divide-gray-100" 
+            style={{ 
+              maxHeight: suggestions.length > 5 ? '1000px' : 'auto', 
+              overflowY: suggestions.length > 5 ? 'auto' : 'visible' 
+            }}
+          >
             {suggestions.map((item, idx) => (
               <li
                 key={item.type + (item.slug || item.title)}
@@ -280,7 +294,8 @@ export default function SearchOverlay({ isOpen, onClose }) {
                       <img 
                         src={item.image} 
                         alt={item.title}
-                        className="h-12 w-12 object-cover mr-3"
+                        className="h-12 w-12 object-contain bg-gray-50 mr-3"
+                        style={{aspectRatio: "1/1"}}
                         onError={(e) => {
                           e.target.style.display = 'none';
                         }}

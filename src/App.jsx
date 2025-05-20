@@ -94,7 +94,7 @@ const SearchContext = React.createContext({
 export const useSearchContext = () => React.useContext(SearchContext)
 
 export default function App() {
-  const [showSearch, setShowSearch] = useState(true) // Start with search open by default
+  const [showSearch, setShowSearch] = useState(false) 
 
   // Automatically close search when user navigates
   useEffect(() => {
