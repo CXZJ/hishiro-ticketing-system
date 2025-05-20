@@ -29,7 +29,7 @@
     "slick-carousel": "^1.8.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "swiper": "^11.2.6"
+    "swiper": "^11.2.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

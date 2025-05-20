@@ -1,5 +1,5 @@
 // src/App.jsx
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 // layouts & pages
@@ -9,6 +9,7 @@ import ProductList  from './components/ProductList'
 import Footer       from './components/Footer'
 import ChatWidget   from './components/ChatWidget'
 import ChatPage     from './components/ChatPage'
+import SearchOverlay from './components/SearchOverlay'
 
 // auth
 import Login        from './auth/Login'
@@ -20,11 +21,30 @@ import Tickets      from './admin/pages/Tickets'
 import NewTicket    from './admin/pages/NewTicket'
 
 function ClientLayout() {
+  const { showSearch, setShowSearch } = useSearchContext()
+
   return (
     <>
-      <Header />
+      <Header onSearchClick={() => setShowSearch(true)} />
+      <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
       <main>
         <Slider />
+        <ProductList limit={3} heading="OUT NOW" />
+      </main>
+      <Footer />
+      <ChatWidget />
+    </>
+  )
+}
+
+function CategoryLayout() {
+  const { showSearch, setShowSearch } = useSearchContext()
+
+  return (
+    <>
+      <Header onSearchClick={() => setShowSearch(true)} />
+      <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <main>
         <ProductList />
       </main>
       <Footer />
@@ -33,29 +53,86 @@ function ClientLayout() {
   )
 }
 
-export default function App() {
+function AllProductsPage() {
+  const { showSearch, setShowSearch } = useSearchContext()
+
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public auth */}
-        <Route path="/login"  element={<Login  />} />
-        <Route path="/signup" element={<SignUp />} />
+    <>
+      <Header onSearchClick={() => setShowSearch(true)} />
+      <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <main>
+        <ProductList />
+      </main>
+      <Footer />
+      <ChatWidget />
+    </>
+  )
+}
 
-        {/* Full-page chat */}
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/chat/:ticketId" element={<ChatPage />} />
+function SearchPage() {
+  const { showSearch, setShowSearch } = useSearchContext()
 
-        {/* Client storefront */}
-        <Route path="/" element={<ClientLayout />} />
+  return (
+    <>
+      <Header onSearchClick={() => setShowSearch(true)} />
+      <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <main>
+        <ProductList search />
+      </main>
+      <Footer />
+      <ChatWidget />
+    </>
+  )
+}
 
-        {/* Admin area */}
-        <Route path="/admin"             element={<Dashboard />} />
-        <Route path="/admin/tickets"     element={<Tickets   />} />
-        <Route path="/admin/tickets/new" element={<NewTicket />} />
+// Create a context for the search state
+const SearchContext = React.createContext({
+  showSearch: false,
+  setShowSearch: () => {},
+})
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+export const useSearchContext = () => React.useContext(SearchContext)
+
+export default function App() {
+  const [showSearch, setShowSearch] = useState(true) // Start with search open by default
+
+  // Automatically close search when user navigates
+  useEffect(() => {
+    const handlePopState = () => {
+      setShowSearch(false)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  return (
+    <SearchContext.Provider value={{ showSearch, setShowSearch }}>
+      <BrowserRouter>
+        <Routes>
+          {/* Public auth */}
+          <Route path="/login"  element={<Login  />} />
+          <Route path="/signup" element={<SignUp />} />
+
+          {/* Full-page chat */}
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chat/:ticketId" element={<ChatPage />} />
+
+          {/* Client storefront */}
+          <Route path="/" element={<ClientLayout />} />
+          <Route path="/all" element={<AllProductsPage />} />
+          <Route path="/category/:category" element={<CategoryLayout />} />
+          <Route path="/search" element={<SearchPage />} />
+
+          {/* Admin area */}
+          <Route path="/admin"             element={<Dashboard />} />
+          <Route path="/admin/tickets"     element={<Tickets   />} />
+          <Route path="/admin/tickets/new" element={<NewTicket />} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </SearchContext.Provider>
   )
 }

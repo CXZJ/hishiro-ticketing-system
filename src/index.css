@@ -30,3 +30,13 @@
 main {
   @apply min-h-screen py-8;
 }
+
+/* Custom breakpoints for category navbar */
+@media (max-width: 1119px) {
+  .show-above-1119 { display: none !important; }
+  .show-below-1120 { display: block !important; }
+}
+@media (min-width: 1120px) {
+  .show-above-1119 { display: block !important; }
+  .show-below-1120 { display: none !important; }
+}

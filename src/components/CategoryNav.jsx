@@ -1,13 +1,16 @@
 import React from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { Swiper, SwiperSlide } from 'swiper/react'
+import 'swiper/css'
 
 const categories = [
-  'All',
-  'Cardigans & Jackets',
-  'Bottom-Wear',
-  'T-shirts & Button-ups',
-  'Sweaters & Hoodies',
-  'Bags',
-  'Archives',
+  { name: 'All', slug: 'all' },
+  { name: 'Cardigans and Jackets', slug: 'cardigans-and-jackets' },
+  { name: 'Bottom-Wear', slug: 'bottom-wear' },
+  { name: 'T-shirts and Button-ups', slug: 't-shirts-and-button-ups' },
+  { name: 'Sweaters and Hoodies', slug: 'sweaters-and-hoodies' },
+  { name: 'Bags', slug: 'bags' },
+  { name: 'Archives', slug: 'archives' },
 ]
 
 /**
@@ -19,9 +22,10 @@ export default function CategoryNav({
   className = '',
 }) {
   const isVertical = orientation === 'vertical'
+  const location = useLocation()
 
   return (
-    <nav className={className}>
+    <nav className={className + " py-3 px-4"}>
       <ul
         className={
           isVertical
@@ -29,18 +33,27 @@ export default function CategoryNav({
             : 'flex justify-center space-x-8'
         }
       >
-        {categories.map(cat => (
-          <li
-            key={cat}
-            className={
-              isVertical
-                ? 'w-full py-4 text-center text-base'
-                : 'text-sm'
-            }
-          >
-            <button className="hover:underline">{cat}</button>
-          </li>
-        ))}
+        {categories.map(cat => {
+          const path = cat.slug === 'all' ? '/all' : `/category/${cat.slug}`;
+          const isActive = location.pathname === path;
+          return (
+            <li
+              key={cat.name}
+              className={
+                isVertical
+                  ? 'w-full py-4 text-center text-lg'
+                  : 'text-lg'
+              }
+            >
+              <Link 
+                to={path}
+                className={`hover:underline ${isActive ? 'font-bold' : ''}`}
+              >
+                {cat.name}
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </nav>
   )
