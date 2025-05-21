@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 // layouts & pages
 import Header       from './components/Header'
 import Slider       from './components/Slider'
+import GucciHero    from './components/VideoHero'
 import ProductList  from './components/ProductList'
 import Footer       from './components/Footer'
 import ChatWidget   from './components/ChatWidget'
@@ -24,16 +25,19 @@ function ClientLayout() {
   const { showSearch, setShowSearch } = useSearchContext()
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Header onSearchClick={() => setShowSearch(true)} />
       <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
-      <main>
-        <Slider />
-        <ProductList limit={3} heading="OUT NOW" />
+      <GucciHero />
+      <main className="flex-grow">
+        <div className="content-container">
+          <Slider />
+          <ProductList limit={3} heading="OUT NOW" />
+        </div>
       </main>
       <Footer />
       <ChatWidget />
-    </>
+    </div>
   )
 }
 
@@ -44,9 +48,15 @@ function CategoryLayout() {
     <>
       <Header onSearchClick={() => setShowSearch(true)} />
       <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
-      <main>
-        <ProductList />
-      </main>
+      <div style={{
+        backgroundImage: "url(/src/assets/background-scaled.png)",
+        backgroundRepeat: "repeat",
+        backgroundSize: "700px"
+      }}>
+        <main className="pt-36">
+          <ProductList />
+        </main>
+      </div>
       <Footer />
       <ChatWidget />
     </>
@@ -60,9 +70,15 @@ function AllProductsPage() {
     <>
       <Header onSearchClick={() => setShowSearch(true)} />
       <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
-      <main>
-        <ProductList />
-      </main>
+      <div style={{
+        backgroundImage: "url(/src/assets/background-scaled.png)",
+        backgroundRepeat: "repeat",
+        backgroundSize: "700px"
+      }}>
+        <main className="pt-36">
+          <ProductList />
+        </main>
+      </div>
       <Footer />
       <ChatWidget />
     </>
@@ -76,9 +92,15 @@ function SearchPage() {
     <>
       <Header onSearchClick={() => setShowSearch(true)} />
       <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
-      <main>
-        <ProductList search />
-      </main>
+      <div style={{
+        backgroundImage: "url(/src/assets/background-scaled.png)",
+        backgroundRepeat: "repeat",
+        backgroundSize: "700px"
+      }}>
+        <main className="pt-36">
+          <ProductList search />
+        </main>
+      </div>
       <Footer />
       <ChatWidget />
     </>

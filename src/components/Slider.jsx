@@ -23,7 +23,7 @@ export default function Slider() {
 
   return (
     <section
-      className="w-full py-12 bg-white"
+      className="w-full slider-section bg-white"
       style={{
         backgroundImage: `url(${bg})`,
         backgroundSize: '900px 600px',
