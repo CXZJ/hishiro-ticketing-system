@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaApple, FaGoogle } from 'react-icons/fa';
+import { useAuthState } from "react-firebase-hooks/auth";
+import { logInWithEmailAndPassword, signInWithGoogle, auth } from '../firebase';
 import bg   from '../assets/background-scaled.png';
 import logo from '../assets/logo.png';
 
@@ -8,13 +10,42 @@ export default function Login() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+  const [user, loading, error] = useAuthState(auth);
   const navigate = useNavigate();
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    // TODO: call your auth API
-    console.log({ email, password, remember });
-    navigate('/'); // on success
+    try {
+      await logInWithEmailAndPassword(email, password);
+      navigate('/'); // on success
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const user = await signInWithGoogle(); // returns the Firebase user object
+
+      // Sends user profile to backend
+      await fetch('http://localhost:5001/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          username: user.displayName, 
+          gender: '', 
+          phone: user.phoneNumber || '',
+          address: '',
+          authProvider: "google"
+        })
+      });
+
+      navigate('/');
+    } catch (err) {
+      setApiError(err.message);
+    }
   };
 
   return (
@@ -26,6 +57,13 @@ export default function Login() {
       backgroundSize: '1000px 800px',
     }}
     >
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-6 bg-gray-200 hover:bg-gray-300 rounded-full px-4 py-2 text-sm font-medium shadow"
+        style={{ zIndex: 10 }}
+      >
+        ← 
+      </button>
       <form
         onSubmit={handleSubmit}
         className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm"
@@ -47,7 +85,7 @@ export default function Login() {
 
         <div className="flex justify-between items-center mb-1">
           <label className="text-sm font-medium">Password</label>
-          <Link to="/forgot" className="text-sm text-blue-600 hover:underline">
+          <Link to="/reset" className="text-sm text-blue-600 hover:underline">
             Forgot Password?
           </Link>
         </div>
@@ -87,6 +125,7 @@ export default function Login() {
           <button
             type="button"
             className="w-full flex items-center justify-center border border-gray-300 rounded px-4 py-2 hover:bg-gray-100"
+            onClick={handleGoogleSignIn}
           >
             <FaGoogle className="mr-2 text-red-500" /> Login with Google
           </button>

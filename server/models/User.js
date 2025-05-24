@@ -2,28 +2,16 @@ import mongoose from 'mongoose';
 
 const userSchema = mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: [true, 'Please add a name'],
-    },
-    email: {
-      type: String,
-      required: [true, 'Please add an email'],
-      unique: true,
-    },
-    password: {
-      type: String,
-      required: [true, 'Please add a password'],
-    },
-    isAdmin: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
+    uid: { type: String, required: true, unique: true }, // Firebase UID
+    email: { type: String, required: true, unique: true },
+    username: { type: String },
+    gender: { type: String },
+    phone: { type: String },
+    address: { type: String },
+    authProvider: { type: String, default: 'local' },
+    isAdmin: { type: Boolean, default: false },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-export default mongoose.model('User', userSchema); 
+export default mongoose.model('User', userSchema);

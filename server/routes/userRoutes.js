@@ -1,15 +1,8 @@
 import express from 'express';
-import {
-  registerUser,
-  loginUser,
-  getMe,
-} from '../controllers/userController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { registerFirebaseUser } from '../controllers/userController.js';
 
 const router = express.Router();
 
-router.post('/', registerUser);
-router.post('/login', loginUser);
-router.get('/me', protect, getMe);
+router.post('/', registerFirebaseUser);
 
-export { router as default }; 
+export default router;

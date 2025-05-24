@@ -12,8 +12,11 @@ import { Link, useLocation } from 'react-router-dom'
 import logo from '../assets/logo.png'
 import logoWhite from '../assets/logo-white.png'
 import CategoryNav from './CategoryNav'
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { auth } from '../firebase'
 
 export default function Header({ onSearchClick }) {
+  const [user] = useAuthState(auth);
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation();
@@ -80,7 +83,7 @@ export default function Header({ onSearchClick }) {
               0
             </span>
           </div>
-          <Link to="/login">
+          <Link to={user ? "/profile" : "/login"}>
             <UserIcon className={`h-5 w-5 md:h-6 md:w-6 ${scrolled || !showHeroHeader ? 'text-black' : 'text-white'}`} />
           </Link>
         </div>

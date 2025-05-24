@@ -2,50 +2,30 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// @desc    Register a new user
+// @desc    Register a new user from Firebase Auth
 // @route   POST /api/users
 // @access  Public
-const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+const registerFirebaseUser = async (req, res) => {
+  const { uid, email, username, gender, phone, address, authProvider } = req.body;
 
-  // Validation
-  if (!name || !email || !password) {
-    res.status(400);
-    throw new Error('Please include all fields');
+  if (!uid || !email) {
+    return res.status(400).json({ message: 'Missing uid or email' });
   }
 
-  // Find if user already exists
-  const userExists = await User.findOne({ email });
-
+  // Check if user already exists
+  const userExists = await User.findOne({ uid });
   if (userExists) {
-    res.status(400);
-    throw new Error('User already exists');
+    return res.status(200).json(userExists); // Return already registered user
   }
-
-  // Hash password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
 
   // Create user
-  const user = await User.create({
-    name,
-    email,
-    password: hashedPassword,
-  });
-
-  if (user) {
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-      token: generateToken(user._id),
-    });
-  } else {
-    res.status(400);
-    throw new Error('Invalid user data');
-  }
+  const user = new User({ uid, email, username, gender, phone, address, authProvider });
+  await user.save();
+  res.status(201).json(user);
 };
+
+//This part below (loginUser) is not needed, firebase handles user authentication, 
+// but we can keep if we want to do some custom login logic
 
 // @desc    Login a user
 // @route   POST /api/users/login
@@ -91,7 +71,7 @@ const generateToken = (id) => {
 };
 
 export {
-  registerUser,
   loginUser,
   getMe,
-}; 
+  registerFirebaseUser,
+};

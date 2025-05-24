@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaApple, FaGoogle } from 'react-icons/fa';
+import { registerWithEmailAndPassword, signInWithGoogle } from '../firebase';
+import { updateProfile } from "firebase/auth";
 import bg   from '../assets/background-scaled.png';
 import logo from '../assets/logo.png';
 
@@ -42,15 +44,26 @@ export default function SignUp() {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/register', {
+      // Register with Firebase Auth
+      const user = await registerWithEmailAndPassword(form.email, form.password);
+
+      await updateProfile(user, { displayName: form.username });
+
+      // Send user profile to backend
+      await fetch('http://localhost:5001/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          uid: user.uid,
+          email: form.email,
+          username: form.username,
+          gender: form.gender,
+          phone: form.phone,
+          address: form.address,
+          authProvider: "local"
+        })
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || 'Registration failed');
-      }
+
       navigate('/login');
     } catch (err) {
       setApiError(err.message);
@@ -61,12 +74,12 @@ export default function SignUp() {
 
   return (
     <div
-    className="min-h-screen flex items-center justify-center"
-    style={{
-      backgroundImage: `url(${bg})`,
-      backgroundRepeat: 'repeat',
-      backgroundSize: '1000px 800px',
-    }}
+      className="min-h-screen flex items-center justify-center"
+      style={{
+        backgroundImage: `url(${bg})`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '1000px 800px',
+      }}
     >
       <form
         onSubmit={handleSubmit}
@@ -179,12 +192,22 @@ export default function SignUp() {
           <button
             type="button"
             className="w-full flex items-center justify-center border border-gray-300 rounded px-4 py-2 hover:bg-gray-100"
+            // Apple login not implemented yet
+            onClick={() => alert('Apple login not implemented yet')}
           >
             <FaApple className="mr-2" /> Sign up with Apple
           </button>
           <button
             type="button"
             className="w-full flex items-center justify-center border border-gray-300 rounded px-4 py-2 hover:bg-gray-100"
+            onClick={async () => {
+              try {
+                await signInWithGoogle();
+                navigate('/');
+              } catch (err) {
+                setApiError(err.message);
+              }
+            }}
           >
             <FaGoogle className="mr-2 text-red-500" /> Sign up with Google
           </button>

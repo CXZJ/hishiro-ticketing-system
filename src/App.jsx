@@ -15,6 +15,8 @@ import SearchOverlay from './components/SearchOverlay'
 // auth
 import Login        from './auth/Login'
 import SignUp       from './auth/SignUp'
+import Reset        from './auth/Reset'
+import Profile      from './auth/Profile'
 
 // admin
 import Dashboard    from './admin/pages/Dashboard'
@@ -135,6 +137,8 @@ export default function App() {
           {/* Public auth */}
           <Route path="/login"  element={<Login  />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/reset"  element={<Reset />} />
+          <Route path="/profile" element={<Profile />} />
 
           {/* Full-page chat */}
           <Route path="/chat" element={<ChatPage />} />
