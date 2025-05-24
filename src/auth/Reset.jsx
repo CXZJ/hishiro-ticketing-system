@@ -42,6 +42,13 @@ export default function Reset() {
         backgroundSize: "1000px 800px",
       }}
     >
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-6 bg-gray-200 hover:bg-gray-300 rounded-full px-4 py-2 text-sm font-medium shadow"
+        style={{ zIndex: 10 }}
+      >
+        ← 
+      </button>
       <form
         onSubmit={handleReset}
         className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm"
