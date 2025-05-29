@@ -1,6 +1,6 @@
 import React from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { auth, logout } from "../firebase";
 import logo from "../assets/logo.png";
 import bg from "../assets/background-scaled.png";
@@ -10,8 +10,7 @@ export default function Profile() {
   const navigate = useNavigate();
 
   if (!user) {
-    navigate("/login");
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return (

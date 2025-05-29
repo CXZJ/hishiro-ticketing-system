@@ -50,17 +50,22 @@ const loginUser = async (req, res) => {
   }
 };
 
+/// fix this ?/ for user settings
 // @desc    Get current user
 // @route   GET /api/users/me
 // @access  Private
 const getMe = async (req, res) => {
-  const user = {
-    id: req.user._id,
-    email: req.user.email,
-    name: req.user.name,
-    isAdmin: req.user.isAdmin,
-  };
-  res.status(200).json(user);
+  const user = req.user; // Populated by auth middleware
+  res.status(200).json({
+    id: user._id,
+    email: user.email,
+    username: user.username,
+    gender: user.gender,
+    phone: user.phone,
+    address: user.address,
+    isAdmin: user.isAdmin,
+    // add any other fields you want to expose
+  });
 };
 
 // Generate token

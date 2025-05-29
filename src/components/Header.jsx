@@ -83,7 +83,7 @@ export default function Header({ onSearchClick }) {
               0
             </span>
           </div>
-          <Link to={user ? "/profile" : "/login"}>
+          <Link to={user ? "/dashboard" : "/login"}>
             <UserIcon className={`h-5 w-5 md:h-6 md:w-6 ${scrolled || !showHeroHeader ? 'text-black' : 'text-white'}`} />
           </Link>
         </div>

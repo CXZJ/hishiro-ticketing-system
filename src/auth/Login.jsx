@@ -17,7 +17,7 @@ export default function Login() {
     e.preventDefault();
     try {
       await logInWithEmailAndPassword(email, password);
-      navigate('/'); // on success
+      navigate('/dashboard'); // Changed from '/' to '/dashboard'
     } catch (err) {
       alert(err.message);
     }
@@ -42,7 +42,7 @@ export default function Login() {
         })
       });
 
-      navigate('/');
+      navigate('/dashboard'); // Changed from '/' to '/dashboard'
     } catch (err) {
       setApiError(err.message);
     }
@@ -132,7 +132,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-gray-600 mt-6">
-          Don’t have an account?{' '}
+          Don't have an account?{' '}
           <Link to="/signup" className="text-blue-600 hover:underline">
             Create Account
           </Link>

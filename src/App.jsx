@@ -17,9 +17,10 @@ import Login        from './auth/Login'
 import SignUp       from './auth/SignUp'
 import Reset        from './auth/Reset'
 import Profile      from './auth/Profile'
+import Dashboard    from './auth/Dashboard'
 
 // admin
-import Dashboard    from './admin/pages/Dashboard'
+import AdminDashboard from './admin/pages/Dashboard'
 import Tickets      from './admin/pages/Tickets'
 import NewTicket    from './admin/pages/NewTicket'
 
@@ -139,6 +140,7 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/reset"  element={<Reset />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/dashboard" element={<Dashboard />} />
 
           {/* Full-page chat */}
           <Route path="/chat" element={<ChatPage />} />
@@ -151,7 +153,7 @@ export default function App() {
           <Route path="/search" element={<SearchPage />} />
 
           {/* Admin area */}
-          <Route path="/admin"             element={<Dashboard />} />
+          <Route path="/admin"             element={<AdminDashboard />} />
           <Route path="/admin/tickets"     element={<Tickets   />} />
           <Route path="/admin/tickets/new" element={<NewTicket />} />
 
