@@ -426,8 +426,12 @@ export default function Dashboard() {
           {/* Right: Notification and Welcome */}
           <div className="flex items-center space-x-4">
             <NotificationBell />
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Welcome back,</p>
+            <div className="flex items-center space-x-3">
+              <img
+                src={userInfo?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
+                alt="Profile"
+                className="w-10 h-10 rounded-full border-2 border-gray-200 shadow object-cover"
+              />
               <p className="font-medium">{user?.displayName || user?.email?.split('@')[0]}</p>
             </div>
           </div>

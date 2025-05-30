@@ -50,7 +50,7 @@ export default function SignUp() {
       await updateProfile(user, { displayName: form.username });
 
       // Send user profile to backend
-      await fetch('http://localhost:5001/api/users', {
+      const response = await fetch('http://localhost:5001/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,6 +64,15 @@ export default function SignUp() {
         })
       });
 
+      console.log('Response status:', response.status);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Failed to register user');
+      }
+
+      console.log('User registered successfully:', responseData);
       navigate('/login');
     } catch (err) {
       setApiError(err.message);
