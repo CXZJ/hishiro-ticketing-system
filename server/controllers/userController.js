@@ -6,22 +6,41 @@ import User from '../models/User.js';
 // @route   POST /api/users
 // @access  Public
 const registerFirebaseUser = async (req, res) => {
+  console.log('Received registration request:', req.body);
   const { uid, email, username, gender, phone, address, authProvider } = req.body;
 
   if (!uid || !email) {
+    console.log('Missing required fields:', { uid, email });
     return res.status(400).json({ message: 'Missing uid or email' });
   }
 
-  // Check if user already exists
-  const userExists = await User.findOne({ uid });
-  if (userExists) {
-    return res.status(200).json(userExists); // Return already registered user
-  }
+  try {
+    // Check if user already exists
+    const userExists = await User.findOne({ uid });
+    if (userExists) {
+      console.log('User already exists:', userExists);
+      return res.status(200).json({
+        message: 'User already exists',
+        user: userExists
+      });
+    }
 
-  // Create user
-  const user = new User({ uid, email, username, gender, phone, address, authProvider });
-  await user.save();
-  res.status(201).json(user);
+    // Create user
+    const user = new User({ uid, email, username, gender, phone, address, authProvider });
+    const savedUser = await user.save();
+    console.log('User created successfully:', savedUser);
+    
+    return res.status(201).json({
+      message: 'User registered successfully',
+      user: savedUser
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return res.status(500).json({ 
+      message: 'Error creating user',
+      error: error.message 
+    });
+  }
 };
 
 //This part below (loginUser) is not needed, firebase handles user authentication, 

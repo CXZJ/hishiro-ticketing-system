@@ -10,6 +10,8 @@ import userRoutes from './routes/userRoutes.js';
 import Ticket from './models/Ticket.js';
 import mongoose from 'mongoose';
 import User from './models/User.js';
+import swaggerUi from 'swagger-ui-express';
+import { specs } from './config/swagger.js';
 
 // Load environment variables
 dotenv.config();
@@ -30,6 +32,9 @@ const io = new Server(server, {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes
 app.use('/api/tickets', ticketRoutes);
