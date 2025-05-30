@@ -17,6 +17,7 @@ import {
   HomeIcon,
 } from "@heroicons/react/24/outline";
 import logo from "../assets/logo.png";
+import NotificationBell from '../components/NotificationBell';
 
 export default function Dashboard() {
   const [user, loading] = useAuthState(auth);
@@ -423,49 +424,11 @@ export default function Dashboard() {
             </Link>
           </div>
           {/* Right: Notification and Welcome */}
-          <div className="flex items-center gap-4 pr-2 sm:gap-4 ml-auto">
-            <img
-              src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.email || 'User'}`}
-              alt="Profile"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-gray-200 shadow object-cover"
-              style={{ marginRight: '2px' }}
-            />
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications((v) => !v)}
-                className="relative p-2 rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center"
-                aria-label="Notifications"
-              >
-                <BellIcon className="h-6 w-6 text-gray-700" />
-              </button>
-              {showNotifications && (
-                <div className="absolute right-1 mt-2 w-[95vw] max-w-xs sm:w-80 sm:right-0 sm:left-auto sm:translate-x-0 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-x-hidden overflow-y-auto">
-                  <button
-                    className="absolute top-3 right-3 p-2 text-gray-700 hover:bg-gray-100 rounded-full"
-                    onClick={() => setShowNotifications(false)}
-                    aria-label="Close notifications"
-                    style={{ zIndex: 10 }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                  <div className="p-4 pt-2">
-                    <h3 className="text-lg font-semibold mb-2">Notifications</h3>
-                    <div className="text-gray-500 text-center py-4">No notifications yet.</div>
-                    <button
-                      className="block w-full mt-2 text-black font-medium underline text-center underline-offset-4 hover:opacity-70 transition-all duration-150"
-                      onClick={() => {
-                        setActiveTab('notifications');
-                        setShowNotifications(false);
-                        if (window.innerWidth < 1280) setShowSidebar(true);
-                      }}
-                    >
-                      See more notifications
-                    </button>
-                  </div>
-                </div>
-              )}
+          <div className="flex items-center space-x-4">
+            <NotificationBell />
+            <div className="text-right">
+              <p className="text-sm text-gray-600">Welcome back,</p>
+              <p className="font-medium">{user?.displayName || user?.email?.split('@')[0]}</p>
             </div>
           </div>
         </div>

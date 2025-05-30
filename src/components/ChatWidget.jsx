@@ -6,6 +6,7 @@ import {
   PhotoIcon,
 } from "@heroicons/react/24/solid";
 import { io } from "socket.io-client";
+import { useNotifications } from '../contexts/NotificationContext';
 import customerSupportIcon from "../assets/customer-support.png";
 import { generateBotResponse } from "../services/geminiService";
 
@@ -22,6 +23,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
   const socketRef = useRef(null);
   const endRef = useRef(null);
   const [isAdminPresent, setIsAdminPresent] = useState(false);
+  const { addNotification } = useNotifications();
 
   // Socket connection
   useEffect(() => {
@@ -66,6 +68,19 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
           text: data.message,
           time: data.time
         }]);
+
+        // Add notification for admin message
+        if (data.sender === 'admin') {
+          addNotification({
+            title: 'New Message from Admin',
+            message: `Ticket #${data.ticketId.substring(0, 8)}...`,
+            icon: (
+              <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            )
+          });
+        }
       }
     });
 
