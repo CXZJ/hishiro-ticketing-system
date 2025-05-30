@@ -1,6 +1,8 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
+import { NotificationProvider } from './contexts/NotificationContext'
 
 // layouts & pages
 import Header       from './components/Header'
@@ -132,35 +134,38 @@ export default function App() {
   }, [])
 
   return (
-    <SearchContext.Provider value={{ showSearch, setShowSearch }}>
-      <BrowserRouter>
-        <Routes>
-          {/* Public auth */}
-          <Route path="/login"  element={<Login  />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/reset"  element={<Reset />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+    <NotificationProvider>
+      <SearchContext.Provider value={{ showSearch, setShowSearch }}>
+        <BrowserRouter>
+          <Toaster />
+          <Routes>
+            {/* Public auth */}
+            <Route path="/login"  element={<Login  />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/reset"  element={<Reset />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* Full-page chat */}
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/chat/:ticketId" element={<ChatPage />} />
+            {/* Full-page chat */}
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/chat/:ticketId" element={<ChatPage />} />
 
-          {/* Client storefront */}
-          <Route path="/" element={<ClientLayout />} />
-          <Route path="/all" element={<AllProductsPage />} />
-          <Route path="/category/:category" element={<CategoryLayout />} />
-          <Route path="/search" element={<SearchPage />} />
+            {/* Client storefront */}
+            <Route path="/" element={<ClientLayout />} />
+            <Route path="/all" element={<AllProductsPage />} />
+            <Route path="/category/:category" element={<CategoryLayout />} />
+            <Route path="/search" element={<SearchPage />} />
 
-          {/* Admin area */}
-          <Route path="/admin"             element={<AdminDashboard />} />
-          <Route path="/admin/tickets"     element={<Tickets   />} />
-          <Route path="/admin/tickets/new" element={<NewTicket />} />
+            {/* Admin area */}
+            <Route path="/admin"             element={<AdminDashboard />} />
+            <Route path="/admin/tickets"     element={<Tickets   />} />
+            <Route path="/admin/tickets/new" element={<NewTicket />} />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </SearchContext.Provider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </SearchContext.Provider>
+    </NotificationProvider>
   )
 }
