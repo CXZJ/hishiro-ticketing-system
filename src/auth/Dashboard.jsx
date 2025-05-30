@@ -12,22 +12,28 @@ import {
   ArrowRightOnRectangleIcon,
   BellIcon,
   MoonIcon,
+  Bars3Icon,
+  XMarkIcon,
+  HomeIcon,
 } from "@heroicons/react/24/outline";
 import logo from "../assets/logo.png";
 
 export default function Dashboard() {
-  const [user] = useAuthState(auth);
+  const [user, loading] = useAuthState(auth);
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [activeTab, setActiveTab] = useState("overview");
   const [userInfo, setUserInfo] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState({ username: '', gender: '', phone: '', address: '' });
+  const [editForm, setEditForm] = useState({ username: '', gender: '', phone: '', address: '', photoURL: '' });
   const [saving, setSaving] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
+    if (loading) return;
+    
     if (!user) {
       navigate("/login");
       return;
@@ -50,7 +56,8 @@ export default function Dashboard() {
           username: data.username || '',
           gender: data.gender || '',
           phone: data.phone || '',
-          address: data.address || ''
+          address: data.address || '',
+          photoURL: data.photoURL || ''
         });
       })
       .catch(() => setUserInfo(null));
@@ -60,11 +67,37 @@ export default function Dashboard() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [user, navigate, darkMode]);
+  }, [user, loading, navigate, darkMode]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const handleEditChange = e => {
     const { name, value } = e.target;
     setEditForm(f => ({ ...f, [name]: value }));
+  };
+
+  // Handle profile picture upload
+  const handlePhotoChange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditForm(f => ({ ...f, photoURL: reader.result }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleEditSave = async () => {
@@ -96,9 +129,11 @@ export default function Dashboard() {
   };
 
   const menuItems = [
+    { id: "home", label: "Home", icon: HomeIcon, action: () => { navigate('/'); setShowSidebar(false); } },
     { id: "overview", label: "Overview", icon: UserCircleIcon },
     { id: "tickets", label: "My Tickets", icon: TicketIcon },
     { id: "chat", label: "Support Chat", icon: ChatBubbleLeftRightIcon },
+    { id: "notifications", label: "Notifications", icon: BellIcon },
     { id: "settings", label: "Settings", icon: Cog6ToothIcon },
   ];
 
@@ -238,6 +273,17 @@ export default function Dashboard() {
           </div>
         );
 
+      case "notifications":
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold mb-4">Notifications</h3>
+            <div className="text-center py-8">
+              <BellIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 mb-4">You have no notifications at the moment.</p>
+            </div>
+          </div>
+        );
+
       case "settings":
         return (
           <div className="p-8">
@@ -253,16 +299,36 @@ export default function Dashboard() {
               )}
             </div>
             <div className="space-y-8">
-              <div className="flex items-center space-x-4">
-                <img
-                  src={user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full border-2 border-gray-200 shadow"
-                />
-                <div>
-                  <p className="font-semibold text-lg text-gray-900">{user.displayName || userInfo?.username || "No Name"}</p>
-                  <p className="text-sm text-gray-500">{user.email}</p>
-                </div>
+              <div className="flex flex-col items-center justify-center space-y-2 mb-4">
+                {editMode ? (
+                  <label htmlFor="profile-pic-upload" className="cursor-pointer group flex flex-col items-center">
+                    <img
+                      src={editForm.photoURL || userInfo?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
+                      alt="Profile"
+                      className="w-20 h-20 rounded-full border-2 border-gray-200 shadow mb-2 object-cover"
+                    />
+                    <span className="text-xs text-gray-500 group-hover:underline">Change Photo</span>
+                    <input
+                      id="profile-pic-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
+                  </label>
+                ) : (
+                  <img
+                    src={userInfo?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full border-2 border-gray-200 shadow mb-2 object-cover"
+                  />
+                )}
+                <p className="font-semibold text-lg text-gray-900 text-center">{user.displayName || userInfo?.username || "No Name"}</p>
+                <span className="block w-full flex justify-center">
+                  <span className="inline-block max-w-full overflow-x-auto whitespace-nowrap text-xs sm:text-sm text-center" style={{ display: 'block' }}>
+                    {userInfo?.email || user.email}
+                  </span>
+                </span>
               </div>
               {editMode ? (
                 <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
@@ -293,7 +359,7 @@ export default function Dashboard() {
                   </div>
                   <div className="md:col-span-2 flex gap-3 mt-2">
                     <button type="submit" disabled={saving} className="bg-black text-white px-6 py-2 rounded-lg font-semibold shadow hover:scale-105 hover:shadow-lg transition-all duration-150 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
-                    <button type="button" onClick={() => { setEditMode(false); setEditForm({ username: userInfo?.username || '', gender: userInfo?.gender || '', phone: userInfo?.phone || '', address: userInfo?.address || '' }); }} className="bg-white text-black border border-black px-6 py-2 rounded-lg font-semibold shadow hover:bg-black hover:text-white hover:scale-105 hover:shadow-lg transition-all duration-150">Cancel</button>
+                    <button type="button" onClick={() => { setEditMode(false); setEditForm({ username: userInfo?.username || '', gender: userInfo?.gender || '', phone: userInfo?.phone || '', address: userInfo?.address || '', photoURL: userInfo?.photoURL || '' }); }} className="bg-white text-black border border-black px-6 py-2 rounded-lg font-semibold shadow hover:bg-black hover:text-white hover:scale-105 hover:shadow-lg transition-all duration-150">Cancel</button>
                   </div>
                 </form>
               ) : (
@@ -304,7 +370,9 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Email</p>
-                    <p className="font-medium">{userInfo?.email || user.email}</p>
+                    <p className="font-medium text-xs sm:text-sm block mt-1 text-left">
+                      {userInfo?.email || user.email}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Gender</p>
@@ -329,55 +397,87 @@ export default function Dashboard() {
     }
   };
 
+  // Debug: log activeTab to ensure it's always a string
+  console.log('Sidebar activeTab:', activeTab);
+
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-white/70 backdrop-blur-md shadow-xl py-4 px-2 sm:py-6 sm:px-0 rounded-b-2xl border-b border-gray-200 flex items-center">
-        <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
-          <Link to="/" className="transition-transform duration-200 hover:scale-105">
-            <img src={logo} alt="Logo" className="h-12 sm:h-14 drop-shadow-xl cursor-pointer" />
-          </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Notification Bell Button */}
+      <header className="bg-white/70 backdrop-blur-md shadow-xl py-4 px-2 sm:py-6 sm:px-0 rounded-b-2xl border-b border-gray-200 flex items-center relative">
+        <div className="max-w-7xl mx-auto flex items-center justify-between w-full relative">
+          {/* Left: Hamburger */}
+          <div className="flex items-center">
             <button
-              onClick={() => setShowNotifications((v) => !v)}
-              className="relative p-2 rounded-full hover:bg-gray-200 transition-colors"
-              aria-label="Notifications"
+              className="block xl:hidden p-2 rounded hover:bg-gray-200 focus:outline-none mr-2"
+              onClick={() => setShowSidebar(true)}
+              aria-label="Open sidebar"
+              style={{ position: 'relative' }}
             >
-              <BellIcon className="h-6 w-6 text-gray-700" />
+              <Bars3Icon className="h-7 w-7 text-gray-700" />
             </button>
-            <span className="text-base sm:text-lg text-gray-700 font-medium tracking-wide flex items-center gap-2">
-              Welcome, 
-              <span className="font-bold text-black px-2 sm:px-3 py-1 rounded-lg">
-                {user?.displayName || user?.email?.split('@')[0]}
-              </span>
-            </span>
+          </div>
+          {/* Center: Logo (absolutely centered) */}
+          <div className="hidden xl:block absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <Link to="/" className="transition-transform duration-200 hover:scale-105">
+              <img src={logo} alt="Logo" className="h-12 sm:h-14 drop-shadow-xl cursor-pointer" />
+            </Link>
+          </div>
+          {/* Right: Notification and Welcome */}
+          <div className="flex items-center gap-4 pr-2 sm:gap-4 ml-auto">
+            <img
+              src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.email || 'User'}`}
+              alt="Profile"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-gray-200 shadow object-cover"
+              style={{ marginRight: '2px' }}
+            />
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications((v) => !v)}
+                className="relative p-2 rounded-full hover:bg-gray-200 transition-colors flex items-center justify-center"
+                aria-label="Notifications"
+              >
+                <BellIcon className="h-6 w-6 text-gray-700" />
+              </button>
+              {showNotifications && (
+                <div className="absolute right-1 mt-2 w-[95vw] max-w-xs sm:w-80 sm:right-0 sm:left-auto sm:translate-x-0 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-x-hidden overflow-y-auto">
+                  <button
+                    className="absolute top-3 right-3 p-2 text-gray-700 hover:bg-gray-100 rounded-full"
+                    onClick={() => setShowNotifications(false)}
+                    aria-label="Close notifications"
+                    style={{ zIndex: 10 }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <div className="p-4 pt-2">
+                    <h3 className="text-lg font-semibold mb-2">Notifications</h3>
+                    <div className="text-gray-500 text-center py-4">No notifications yet.</div>
+                    <button
+                      className="block w-full mt-2 text-black font-medium underline text-center underline-offset-4 hover:opacity-70 transition-all duration-150"
+                      onClick={() => {
+                        setActiveTab('notifications');
+                        setShowNotifications(false);
+                        if (window.innerWidth < 1280) setShowSidebar(true);
+                      }}
+                    >
+                      See more notifications
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        {/* Notification Dropdown/Panel */}
-        {showNotifications && (
-          <div className="absolute right-4 top-20 bg-white rounded-xl shadow-xl border border-gray-200 w-80 z-50">
-            <div className="p-4">
-              <h3 className="text-lg font-semibold mb-2">Notifications</h3>
-              <div className="text-gray-500 text-center py-4">No notifications yet.</div>
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* Hero Section (minimal, but with accent) */}
+      {/* Hero Section */}
       <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 mb-4 sm:mb-8">
         <div className="flex flex-col sm:flex-row items-center gap-4 py-4 sm:py-6">
-          <div className="bg-gray-200 rounded-full p-1 shadow">
-            <div className="bg-white rounded-full p-1">
-              <img
-                src={user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
-                alt="Profile"
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full ring-4 ring-gray-300 shadow-lg object-cover"
-              />
+          <div className="text-center sm:text-left w-full">
+            <div className="mb-2 text-lg font-medium text-gray-700">
+              Welcome, <span className="font-bold">{user?.displayName || user?.email?.split('@')[0] || 'User'}</span>
             </div>
-          </div>
-          <div className="text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-1 flex items-center gap-2 justify-center sm:justify-start">
               Your Dashboard
             </h1>
@@ -387,51 +487,75 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col md:flex-row gap-4 md:gap-8">
-        {/* Sidebar with glassmorphism and monochrome highlight */}
-        <aside className="w-full md:w-72 flex-shrink-0 pt-2 md:pt-4 relative mb-4 md:mb-0">
-          <nav className="flex flex-col w-full relative z-10 bg-white/60 backdrop-blur-md rounded-2xl md:rounded-3xl p-2 md:p-4 shadow-xl border border-gray-200">
-            <div className="flex flex-row md:flex-col w-full space-y-0 md:space-y-2 space-x-2 md:space-x-0">
-              {menuItems.map((item, idx) => (
+      <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col xl:flex-row gap-4 xl:gap-8">
+        {/* Sidebar for desktop and overlay for mobile */}
+        <div>
+          {/* Overlay for mobile sidebar */}
+          {showSidebar && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-30 z-40 xl:hidden"
+              onClick={() => setShowSidebar(false)}
+            />
+          )}
+          <aside
+            className={`fixed xl:static top-0 left-0 z-50 xl:z-auto h-full xl:h-auto w-64 xl:w-full transition-transform duration-300 bg-white shadow-lg xl:shadow-xl rounded-none xl:rounded-2xl xl:rounded-3xl p-2 xl:p-4 ${showSidebar ? 'translate-x-0' : '-translate-x-full'} xl:translate-x-0`}
+            style={{ maxWidth: '100vw' }}
+          >
+            {/* Logo at the top of sidebar on mobile */}
+            {showSidebar && (
+              <div className="flex items-center justify-between py-4 xl:hidden">
+                <img src={logo} alt="Logo" className="h-12 drop-shadow-xl" />
                 <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`group flex-1 md:w-full flex items-center gap-2 md:gap-4 px-2 md:px-6 py-2 md:py-3 rounded-xl border font-semibold text-base md:text-lg transition-all duration-200 shadow relative overflow-hidden
-                    ${activeTab === item.id
-                      ? 'bg-black text-white scale-105 border-black shadow-lg'
-                      : 'bg-white/80 text-black border-black/10 hover:bg-black hover:text-white hover:scale-105'}
-                  `}
-                  style={{ zIndex: 1 }}
+                  className="p-2 rounded hover:bg-gray-200 focus:outline-none ml-2"
+                  onClick={() => setShowSidebar(false)}
+                  aria-label="Close sidebar"
                 >
-                  {/* Monochrome highlight bar */}
-                  {activeTab === item.id && (
-                    <span className="hidden md:block absolute left-0 top-0 h-full w-1 bg-black rounded-r-xl transition-all duration-300" />
-                  )}
-                  <span className={`relative z-10 flex items-center`}>
-                    <item.icon className={`h-5 w-5 md:h-6 md:w-6 transition-transform duration-200 ${activeTab === item.id ? 'text-white scale-110' : 'text-black group-hover:text-white group-hover:scale-110'}`} />
-                  </span>
-                  <span className="relative z-10 hidden md:inline">{item.label}</span>
-                  <span className="relative z-10 md:hidden text-xs font-medium">{item.label}</span>
+                  <XMarkIcon className="h-7 w-7 text-gray-700" />
                 </button>
-              ))}
-            </div>
-            <button
-              onClick={() => {
-                logout();
-                navigate("/login");
-              }}
-              className="w-full flex items-center justify-center gap-2 md:gap-3 text-red-500 hover:text-white border border-red-500 hover:bg-red-500/80 hover:scale-105 transition-all duration-200 px-2 md:px-6 py-2 md:py-3 rounded-xl mt-4 md:mt-6 font-semibold text-base md:text-lg shadow relative z-10"
-            >
-              <ArrowRightOnRectangleIcon className="h-5 w-5 md:h-6 md:w-6" />
-              <span className="hidden md:inline">Sign Out</span>
-              <span className="md:hidden text-xs font-medium">Sign Out</span>
-            </button>
-          </nav>
-        </aside>
+              </div>
+            )}
+            <nav className="flex flex-col w-full relative z-10 bg-transparent rounded-2xl xl:rounded-3xl shadow-none border-none xl:border border-gray-200">
+              <div className="flex flex-col w-full space-y-2">
+                {menuItems.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (item.id === 'home' && item.action) {
+                        item.action();
+                      } else {
+                        setActiveTab(item.id); setShowSidebar(false);
+                      }
+                    }}
+                    className={`flex items-center gap-4 px-4 py-3 rounded-xl border font-semibold text-base transition-all duration-200 shadow w-full
+                      ${typeof activeTab === 'string' && activeTab === item.id
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-black border-black/10 hover:bg-black hover:text-white'}
+                    `}
+                  >
+                    <item.icon className="h-6 w-6" />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 xl:mt-6">
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate("/login");
+                  }}
+                  className="w-full flex items-center justify-center xl:justify-start gap-2 xl:gap-3 text-red-500 hover:text-white border border-red-500 hover:bg-red-500/80 hover:scale-105 transition-all duration-200 px-2 xl:px-6 py-2 xl:py-3 rounded-xl font-semibold text-base xl:text-lg shadow relative z-10 bg-white"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5 xl:h-6 xl:w-6" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </nav>
+          </aside>
+        </div>
 
         {/* Content Area with widgets and accent headers */}
         <section className="flex-1 flex flex-col">
-          <div className="w-full rounded-2xl md:rounded-3xl bg-white/70 backdrop-blur-md shadow-2xl p-4 sm:p-6 md:p-8 min-h-[400px] md:min-h-[500px] border border-gray-200">
+          <div className="w-full rounded-2xl xl:rounded-3xl bg-white/70 backdrop-blur-md shadow-2xl p-4 sm:p-6 xl:p-8 min-h-[400px] xl:min-h-[500px] border border-gray-200">
             {renderContent()}
           </div>
         </section>

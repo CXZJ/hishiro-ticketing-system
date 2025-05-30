@@ -68,6 +68,33 @@ const getMe = async (req, res) => {
   });
 };
 
+// @desc    Update current user
+// @route   PATCH /api/users/me
+// @access  Private
+const updateMe = async (req, res) => {
+  const user = req.user; // Populated by auth middleware
+  const { username, gender, phone, address, photoURL } = req.body;
+
+  if (username !== undefined) user.username = username;
+  if (gender !== undefined) user.gender = gender;
+  if (phone !== undefined) user.phone = phone;
+  if (address !== undefined) user.address = address;
+  if (photoURL !== undefined) user.photoURL = photoURL;
+
+  await user.save();
+
+  res.status(200).json({
+    id: user._id,
+    email: user.email,
+    username: user.username,
+    gender: user.gender,
+    phone: user.phone,
+    address: user.address,
+    photoURL: user.photoURL,
+    isAdmin: user.isAdmin,
+  });
+};
+
 // Generate token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -79,4 +106,5 @@ export {
   loginUser,
   getMe,
   registerFirebaseUser,
+  updateMe,
 };

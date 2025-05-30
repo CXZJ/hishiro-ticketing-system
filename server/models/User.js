@@ -8,6 +8,7 @@ const userSchema = mongoose.Schema(
     gender: { type: String },
     phone: { type: String },
     address: { type: String },
+    photoURL: { type: String, default: '' },
     authProvider: { type: String, default: 'local' },
     isAdmin: { type: Boolean, default: false },
   },
