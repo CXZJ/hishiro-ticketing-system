@@ -22,7 +22,10 @@ import Dashboard    from './auth/Dashboard'
 // admin
 import AdminDashboard from './admin/pages/Dashboard'
 import Tickets      from './admin/pages/Tickets'
-import NewTicket    from './admin/pages/NewTicket'
+import TicketDetails from './admin/pages/TicketDetails'
+import Agents       from './admin/pages/Agents'
+import Analytics    from './admin/pages/Analytics'
+import Settings     from './admin/pages/Settings'
 
 function ClientLayout() {
   const { showSearch, setShowSearch } = useSearchContext()
@@ -155,7 +158,10 @@ export default function App() {
           {/* Admin area */}
           <Route path="/admin"             element={<AdminDashboard />} />
           <Route path="/admin/tickets"     element={<Tickets   />} />
-          <Route path="/admin/tickets/new" element={<NewTicket />} />
+          <Route path="/admin/tickets/:id" element={<TicketDetails />} />
+          <Route path="/admin/agents"      element={<Agents />} />
+          <Route path="/admin/analytics"   element={<Analytics />} />
+          <Route path="/admin/settings"    element={<Settings />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
