@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaApple, FaGoogle } from 'react-icons/fa';
 import { useAuthState } from "react-firebase-hooks/auth";
 import { logInWithEmailAndPassword, signInWithGoogle, auth } from '../firebase';
@@ -12,12 +12,16 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
   const [user, loading, error] = useAuthState(auth);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from location state, or default to dashboard
+  const from = location.state?.from || '/dashboard';
 
   const handleSubmit = async e => {
     e.preventDefault();
     try {
       await logInWithEmailAndPassword(email, password);
-      navigate('/dashboard'); // Changed from '/' to '/dashboard'
+      navigate(from); // Redirect to the attempted URL or dashboard
     } catch (err) {
       alert(err.message);
     }
@@ -42,7 +46,7 @@ export default function Login() {
         })
       });
 
-      navigate('/dashboard'); // Changed from '/' to '/dashboard'
+      navigate(from); // Redirect to the attempted URL or dashboard
     } catch (err) {
       setApiError(err.message);
     }

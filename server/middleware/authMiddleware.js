@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import admin from '../config/firebase-admin.js';
 import User from '../models/User.js';
 
 const protect = async (req, res, next) => {
@@ -11,19 +11,22 @@ const protect = async (req, res, next) => {
     try {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
+      
+      // Verify Firebase token
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      
+      // Get user from database using Firebase UID
+      const user = await User.findOne({ uid: decodedToken.uid });
 
-      if (!req.user) {
+      if (!user) {
         res.status(401);
         throw new Error('Not authorized');
       }
 
+      req.user = user;
       next();
     } catch (error) {
-      console.log(error);
+      console.error('Auth error:', error);
       res.status(401);
       throw new Error('Not authorized');
     }
@@ -36,7 +39,7 @@ const protect = async (req, res, next) => {
 };
 
 // Admin middleware
-const admin = (req, res, next) => {
+const adminMiddleware = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
@@ -45,4 +48,4 @@ const admin = (req, res, next) => {
   }
 };
 
-export { protect, admin }; 
+export { protect, adminMiddleware }; 

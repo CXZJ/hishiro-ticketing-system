@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { NotificationProvider } from './contexts/NotificationContext'
+import ProtectedAdminRoute from './components/ProtectedAdminRoute'
 
 // layouts & pages
 import Header       from './components/Header'
@@ -159,13 +160,37 @@ export default function App() {
             <Route path="/category/:category" element={<CategoryLayout />} />
             <Route path="/search" element={<SearchPage />} />
 
-          {/* Admin area */}
-          <Route path="/admin"             element={<AdminDashboard />} />
-          <Route path="/admin/tickets"     element={<Tickets   />} />
-          <Route path="/admin/tickets/:id" element={<TicketDetails />} />
-          <Route path="/admin/agents"      element={<Agents />} />
-          <Route path="/admin/analytics"   element={<Analytics />} />
-          <Route path="/admin/settings"    element={<Settings />} />
+            {/* Admin area */}
+            <Route path="/admin" element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/tickets" element={
+              <ProtectedAdminRoute>
+                <Tickets />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/tickets/:id" element={
+              <ProtectedAdminRoute>
+                <TicketDetails />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/agents" element={
+              <ProtectedAdminRoute>
+                <Agents />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/analytics" element={
+              <ProtectedAdminRoute>
+                <Analytics />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedAdminRoute>
+                <Settings />
+              </ProtectedAdminRoute>
+            } />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

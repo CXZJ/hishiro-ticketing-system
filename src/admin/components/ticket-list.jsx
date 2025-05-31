@@ -3,65 +3,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Eye, MessageSquare, Clock } from 'lucide-react'
-import { Link } from 'react-router-dom'
-
-const tickets = [
-  {
-    id: "TK-001",
-    title: "Login issues with mobile app",
-    customer: "John Doe",
-    email: "john@example.com",
-    priority: "High",
-    status: "Open",
-    assignee: "Sarah Wilson",
-    created: "2 hours ago",
-    messages: 3,
-  },
-  {
-    id: "TK-002",
-    title: "Payment processing error",
-    customer: "Jane Smith",
-    email: "jane@example.com",
-    priority: "Critical",
-    status: "In Progress",
-    assignee: "Mike Johnson",
-    created: "4 hours ago",
-    messages: 7,
-  },
-  {
-    id: "TK-003",
-    title: "Feature request: Dark mode",
-    customer: "Bob Wilson",
-    email: "bob@example.com",
-    priority: "Low",
-    status: "Open",
-    assignee: "Unassigned",
-    created: "1 day ago",
-    messages: 1,
-  },
-  {
-    id: "TK-004",
-    title: "Account deletion request",
-    customer: "Alice Brown",
-    email: "alice@example.com",
-    priority: "Medium",
-    status: "Pending",
-    assignee: "Sarah Wilson",
-    created: "2 days ago",
-    messages: 2,
-  },
-  {
-    id: "TK-005",
-    title: "API documentation unclear",
-    customer: "David Lee",
-    email: "david@example.com",
-    priority: "Medium",
-    status: "Resolved",
-    assignee: "Mike Johnson",
-    created: "3 days ago",
-    messages: 5,
-  },
-]
+import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { io } from 'socket.io-client'
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../firebase';
 
 function getPriorityColor(priority) {
   switch (priority) {
@@ -80,13 +26,13 @@ function getPriorityColor(priority) {
 
 function getStatusColor(status) {
   switch (status) {
-    case "Open":
+    case "new":
       return "bg-blue-100 text-blue-800 hover:bg-blue-200"
-    case "In Progress":
+    case "in-progress":
       return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-    case "Pending":
+    case "pending":
       return "bg-orange-100 text-orange-800 hover:bg-orange-200"
-    case "Resolved":
+    case "resolved":
       return "bg-green-100 text-green-800 hover:bg-green-200"
     default:
       return "bg-gray-100 text-gray-800 hover:bg-gray-200"
@@ -94,6 +40,80 @@ function getStatusColor(status) {
 }
 
 export function TicketList() {
+  const [tickets, setTickets] = useState([]);
+  const [socket, setSocket] = useState(null);
+  const [user, loading] = useAuthState(auth);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return; // Wait for user loading to complete
+    if (!user) {
+      // If user is not logged in, redirect to login page
+      navigate('/login');
+      return;
+    }
+
+    // Connect to socket
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+    const newSocket = io(API_URL);
+    setSocket(newSocket);
+
+    // Fetch initial tickets
+    const fetchTickets = async () => {
+      try {
+        const res = await fetch('/api/tickets', {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`
+          }
+        });
+        if (!res.ok) {
+          if (res.status === 401) {
+             // If unauthorized, redirect to login
+             navigate('/login');
+             return;
+          }
+          throw new Error(`Failed to fetch tickets: ${res.status} ${res.statusText}`);
+        }
+        const data = await res.json();
+        setTickets(data);
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        // Handle other potential errors, maybe show a message to the user
+      }
+    };
+
+    fetchTickets();
+
+    // Listen for new tickets
+    newSocket.on('newTicket', (ticket) => {
+      setTickets(prev => {
+        if (!prev.find(t => t._id === ticket._id)) {
+          return [ticket, ...prev];
+        }
+        return prev;
+      });
+    });
+
+    // Listen for ticket updates
+    newSocket.on('ticketUpdated', (updatedTicket) => {
+      setTickets(prev => prev.map(ticket => 
+        ticket._id === updatedTicket._id ? updatedTicket : ticket
+      ));
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    // Optionally show a loading indicator while user state is being determined
+    return <div>Loading tickets...</div>;
+  }
+
+  // After loading, if user is null, the redirect above will handle it,
+  // so no need for a separate check here for rendering.
+
   return (
     <Card>
       <CardHeader>
@@ -103,61 +123,42 @@ export function TicketList() {
         <div className="space-y-4">
           {tickets.map((ticket) => (
             <div
-              key={ticket.id}
+              key={ticket._id}
               className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center space-x-4 flex-1">
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium text-sm">{ticket.id}</span>
+                    <span className="font-medium text-sm">#{ticket._id.substring(0, 8)}</span>
                     <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
                     <Badge variant="secondary" className={getStatusColor(ticket.status)}>
                       {ticket.status}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold">{ticket.title}</h3>
+                  <h3 className="font-semibold">{ticket.message.substring(0, 50)}...</h3>
                   <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                    <span>{ticket.customer}</span>
-                    <span>•</span>
-                    <span>{ticket.email}</span>
+                    <span>User ID: {ticket.userId}</span>
                     <span>•</span>
                     <div className="flex items-center space-x-1">
                       <Clock className="h-3 w-3" />
-                      <span>{ticket.created}</span>
+                      <span>{new Date(ticket.createdAt).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-1">
-                    <MessageSquare className="h-3 w-3" />
-                    <span>{ticket.messages}</span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src="/placeholder-user.jpg" />
-                    <AvatarFallback className="text-xs">
-                      {ticket.assignee === "Unassigned"
-                        ? "?"
-                        : ticket.assignee
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-muted-foreground">{ticket.assignee}</span>
-                </div>
-                <Link to={`/admin/tickets/${ticket.id}`}>
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-1" />
-                    View
-                  </Button>
-                </Link>
-              </div>
+              <Link to={`/admin/tickets/${ticket._id}`}>
+                <Button variant="ghost" size="sm">
+                  <Eye className="h-4 w-4 mr-2" />
+                  View
+                </Button>
+              </Link>
             </div>
           ))}
+          {tickets.length === 0 && ( // Also handles cases where tickets is not an array initially
+            <div className="text-center py-8 text-muted-foreground">
+              No tickets found
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

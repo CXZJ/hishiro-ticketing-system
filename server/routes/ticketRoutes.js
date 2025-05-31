@@ -7,6 +7,7 @@ import {
   deleteTicket,
 } from '../controllers/ticketController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import Ticket from '../models/Ticket.js';
 
 const router = express.Router();
 
@@ -95,6 +96,16 @@ const router = express.Router();
  *         description: Not authorized
  */
 router.route('/').get(protect, getTickets).post(protect, createTicket);
+
+// Add route for user-specific tickets
+router.get('/user', protect, async (req, res) => {
+  try {
+    const tickets = await Ticket.find({ userId: req.user.uid }).sort({ createdAt: -1 });
+    res.status(200).json(tickets);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
 
 /**
  * @swagger

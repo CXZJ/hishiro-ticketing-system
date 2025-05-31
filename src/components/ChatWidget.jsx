@@ -9,6 +9,10 @@ import { io } from "socket.io-client";
 import { useNotifications } from '../contexts/NotificationContext';
 import customerSupportIcon from "../assets/customer-support.png";
 import { generateBotResponse } from "../services/geminiService";
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../firebase';
+import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 export default function ChatWidget({ fullPage = false, hideHeader = false, ticketId = null }) {
   const [open, setOpen] = useState(fullPage);
@@ -24,123 +28,136 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
   const endRef = useRef(null);
   const [isAdminPresent, setIsAdminPresent] = useState(false);
   const { addNotification } = useNotifications();
+  const [user, loading] = useAuthState(auth);
 
   // Socket connection
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-    const sock = io(API_URL, {
-      reconnectionAttempts: 3,
-      reconnectionDelay: 1000,
-    });
+    // Only connect to socket if not in full page mode (where socket might be handled differently)
+    // Or if in full page mode and we have a ticketId (meaning an existing chat)
+    if (!fullPage || (fullPage && ticketId)) {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+      const sock = io(API_URL, {
+        reconnectionAttempts: 3,
+        reconnectionDelay: 1000,
+      });
 
-    sock.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      setSocketError(true);
-    });
+      sock.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+        setSocketError(true);
+      });
 
-    sock.on("connect", () => {
-      console.log("Socket connected successfully");
-      setSocketError(false);
-    });
+      sock.on("connect", () => {
+        console.log("Socket connected successfully");
+        setSocketError(false);
+      });
 
-    // Handle ticket creation confirmation
-    sock.on("ticketCreated", (ticket) => {
-      setCurrentTicket(ticket);
-      // Provide a link to communicate with admin after the ticket is created
-      setMessages(prev => [...prev, {
-        from: 'system',
-        type: 'text',
-        text: `A support ticket has been created for your issue. Please click here to continue the conversation with our support team.`,
-        time: new Date().toLocaleTimeString(),
-        isLink: true,
-        linkUrl: `/chat/${ticket._id}`
-      }]);
-    });
-
-    // Handle ticket messages
-    sock.on("ticketMessage", (data) => {
-      // Only add messages if we are in the full page ticket chat and the ticketId matches,
-      // AND the message was not sent by the current user.
-      if (fullPage && (ticketId === data.ticketId) && data.sender !== 'user') {
+      // Handle ticket creation confirmation from backend (if still using a backend confirmation)
+      // This might be removed if ticket creation is purely via API now
+      sock.on("ticketCreated", (ticket) => {
+        setCurrentTicket(ticket);
+        // Provide a link to communicate with admin after the ticket is created
         setMessages(prev => [...prev, {
-          from: data.sender === 'admin' ? 'support' : data.sender,
+          from: 'system',
           type: 'text',
-          text: data.message,
-          time: data.time
+          text: `A support ticket has been created for your issue. Please click here to continue the conversation with our support team.`,
+          time: new Date().toLocaleTimeString(),
+          isLink: true,
+          linkUrl: `/chat/${ticket._id}`
         }]);
+      });
 
-        // Add notification for admin message
-        if (data.sender === 'admin') {
-          addNotification({
-            title: 'New Message from Admin',
-            message: `Ticket #${data.ticketId.substring(0, 8)}...`,
-            icon: (
-              <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-            )
-          });
+      // Handle ticket messages
+      sock.on("ticketMessage", (data) => {
+        // Only add messages if we are in the full page ticket chat and the ticketId matches,
+        // AND the message was not sent by the current user.
+        if (fullPage && (ticketId === data.ticketId) && data.sender !== 'user') {
+          setMessages(prev => [...prev, {
+            from: data.sender === 'admin' ? 'support' : data.sender,
+            type: 'text',
+            text: data.message,
+            time: data.time
+          }]);
+
+          // Add notification for admin message
+          if (data.sender === 'admin') {
+            addNotification({
+              title: 'New Message from Admin',
+              message: `Ticket #${data.ticketId.substring(0, 8)}...`,
+              icon: (
+                <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              )
+            });
+          }
         }
-      }
-    });
+      });
 
-    // Handle admin joining
-    sock.on("adminJoined", (data) => {
-      setIsAdminPresent(true);
-      // Only show admin joined message on the full page
-      if (fullPage) {
-        setMessages(prev => [...prev, {
-          from: 'system',
-          type: 'text',
-          text: 'An admin has joined the conversation.',
-          time: data.time
-        }]);
-      }
-    });
+      // Handle admin joining
+      sock.on("adminJoined", (data) => {
+        setIsAdminPresent(true);
+        // Only show admin joined message on the full page
+        if (fullPage) {
+          setMessages(prev => [...prev, {
+            from: 'system',
+            type: 'text',
+            text: 'An admin has joined the conversation.',
+            time: data.time
+          }]);
+        }
+      });
 
-    // Handle user leaving
-    sock.on("userLeft", (data) => {
-      // Only show user left message on the full page
-      if (fullPage) {
-        setMessages(prev => [...prev, {
-          from: 'system',
-          type: 'text',
-          text: 'A user has left the conversation.',
-          time: data.time
-        }]);
-      }
-    });
+      // Handle user leaving
+      sock.on("userLeft", (data) => {
+        // Only show user left message on the full page
+        if (fullPage) {
+          setMessages(prev => [...prev, {
+            from: 'system',
+            type: 'text',
+            text: 'A user has left the conversation.',
+            time: data.time
+          }]);
+        }
+      });
 
-    // Handle ticket status updates
-    sock.on("ticketStatusUpdated", (data) => {
-      // Only show status updates on the full page
-      if (fullPage) {
-        setMessages(prev => [...prev, {
-          from: 'system',
-          type: 'text',
-          text: `Ticket status updated to: ${data.status}`,
-          time: data.time
-        }]);
-      }
-    });
+      // Handle ticket status updates
+      sock.on("ticketStatusUpdated", (data) => {
+        // Only show status updates on the full page
+        if (fullPage) {
+          setMessages(prev => [...prev, {
+            from: 'system',
+            type: 'text',
+            text: `Ticket status updated to: ${data.status}`,
+            time: data.time
+          }]);
+        }
+      });
 
-    // Listen for admin left notification
-    sock.on('adminLeft', (data) => {
-      setIsAdminPresent(false);
-      // Only show admin left message on the full page
-      if (fullPage) {
-        setMessages(prev => [...prev, {
-          from: 'system',
-          type: 'text',
-          text: 'The admin has left converstation.',
-          time: data.time
-        }]);
-      }
-    });
+      // Listen for admin left notification
+      sock.on('adminLeft', (data) => {
+        setIsAdminPresent(false);
+        // Only show admin left message on the full page
+        if (fullPage) {
+          setMessages(prev => [...prev, {
+            from: 'system',
+            type: 'text',
+            text: 'The admin has left converstation.',
+            time: data.time
+          }]);
+        }
+      });
 
-    socketRef.current = sock;
-    return () => sock.disconnect();
-  }, []);
+      socketRef.current = sock;
+
+      return () => { 
+        sock.disconnect();
+      };
+    } else if (socketRef.current) {
+       // If conditions change and socket should no longer be connected, disconnect it
+       socketRef.current.disconnect();
+       socketRef.current = null;
+    }
+  }, [fullPage, ticketId]); // Added fullPage and ticketId to dependencies
 
   // Join ticket room if ticket exists or if ticketId prop is provided
   useEffect(() => {
@@ -151,7 +168,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
       if (fullPage && ticketId) {
         socketRef.current.emit('userJoinTicketRoom', ticketId);
         console.log('Emitting userJoinTicketRoom for ticket:', ticketId);
-      } else if (currentTicket) {
+      } else if (currentTicket && socketRef.current) {
            // Existing logic for admin/system joining, if applicable
           socketRef.current.emit('joinTicketRoom', ticketToJoin); // Keep existing for admin/system
       }
@@ -166,7 +183,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
   // Auto-scroll
   useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
 
-  // FAQ listener
+  // FAQ listener (Seems like a duplicate useEffect for scrolling, might need review)
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -177,7 +194,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
     // Add user message
     setMessages((prev) => [...prev, { from: "user", type: "text", text: txt }]);
     
-    // Only allow chat messages in full chat page
+    // Only allow chat messages in full chat page for existing tickets
     if (fullPage && (currentTicket || ticketId)) {
       console.log('Attempting to emit ticketMessage from full page:', { ticketId: ticketId || currentTicket?._id, message: txt });
       socketRef.current.emit("ticketMessage", {
@@ -187,7 +204,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
         sender: 'user'
       });
     } else {
-      // Generate bot response
+      // If not in a full ticket page or no ticket yet, process with bot or create ticket
       setIsTyping(true);
       try {
         const response = await generateBotResponse([...messages, { from: "user", type: "text", text: txt }]);
@@ -195,24 +212,68 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
         // Add bot response
         setMessages((prev) => [...prev, { from: "support", type: "text", text: response.text }]);
         
-        // If ticket is needed, create it
+        // If ticket is needed, check if user is logged in first
         if (response.needsTicket) {
-          // Create ticket through socket
-          if (socketRef.current) {
-            socketRef.current.emit("createTicket", {
-              message: txt,
-              botResponse: response.text,
-              timestamp: new Date().toISOString()
-            });
+          if (!user) {
+            setMessages((prev) => [...prev, { 
+              from: "system", 
+              type: "text", 
+              text: "Please log in to create a support ticket. You can log in using the account icon in the top right corner." 
+            }]);
+            setIsTyping(false);
+            return;
           }
-        }
+
+          console.log('Attempting to create ticket via API');
+          const createTicketResponse = await fetch('/api/tickets', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${user.accessToken}`
+            },
+            body: JSON.stringify({ message: txt, subject: txt.substring(0, 50) + '...' }) // Using message for subject for now
+          });
+
+          if (!createTicketResponse.ok) {
+            const errorBody = await createTicketResponse.text();
+            console.error('Ticket creation failed:', createTicketResponse.status, errorBody);
+            setMessages((prev) => [...prev, { from: "system", type: "text", text: `Failed to create ticket. Please try again later. (${createTicketResponse.status})` }]);
+            setIsTyping(false);
+            // Optionally redirect to login if 401
+            if (createTicketResponse.status === 401) {
+               toast.error('Please log in to create a ticket.');
+              // Consider a more explicit redirect or modal for login
+            }
+            return;
+          }
+
+          const newTicket = await createTicketResponse.json();
+          console.log('Ticket created successfully:', newTicket);
+          setCurrentTicket(newTicket);
+
+          // Update messages to indicate ticket created and provide link
+          setMessages(prev => [...prev, {
+            from: 'system',
+            type: 'text',
+            text: `A support ticket has been created for your issue. Please click here to continue the conversation with our support team.`,
+            time: new Date().toLocaleTimeString(),
+            isLink: true,
+            linkUrl: `/chat/${newTicket._id}`
+          }]);
+
+          // Join the ticket room via socket after successful creation
+          if (socketRef.current) {
+            socketRef.current.emit('userJoinTicketRoom', newTicket._id);
+            console.log('Emitting userJoinTicketRoom after creation for ticket:', newTicket._id);
+          }
+
+
+        } // else if not fullPage and not needsTicket, then maybe just a regular chat message processed by bot
+
+        setIsTyping(false);
       } catch (error) {
-        console.error("Error getting bot response:", error);
-        setMessages((prev) => [
-          ...prev,
-          { from: "support", type: "text", text: "I apologize, but I'm having trouble processing your request right now." },
-        ]);
-      } finally {
+        console.error("Error sending message or generating bot response:", error);
+        setMessages((prev) => [...prev, { from: "system", type: "text", text: "Sorry, there was an error processing your request." }]);
         setIsTyping(false);
       }
     }
@@ -220,32 +281,11 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
     setTextInput("");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!textInput.trim()) return;
-
-    // Only allow chat messages in full chat page
-    if (fullPage && (currentTicket || ticketId)) {
-      console.log('Attempting to emit ticketMessage from full page:', { ticketId: ticketId || currentTicket?._id, message: textInput });
-      socketRef.current.emit('ticketMessage', {
-        ticketId: ticketId || currentTicket?._id,
-        message: textInput,
-        isAdmin: false,
-        sender: 'user'
-      });
-      
-      // Add user message to the chat immediately
-      setMessages(prev => [...prev, {
-        from: 'user',
-        type: 'text',
-        text: textInput,
-        time: new Date().toLocaleTimeString()
-      }]);
-    } else {
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       sendMessage(textInput);
     }
-
-    setTextInput('');
   };
 
   // Image upload
@@ -262,123 +302,117 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
     : "fixed bottom-4 sm:bottom-6 right-0 z-50 w-full h-1/2 sm:w-96 sm:h-[28rem] rounded-t-xl sm:rounded-xl bg-white border border-gray-300 shadow-xl flex flex-col";
 
   return (
-    <>
-      {/* Trigger */}
-      {!fullPage && !open && (
+    <div
+      className={`fixed bottom-4 right-4 z-50 ${fullPage ? "!static !bottom-auto !right-auto !z-auto w-full h-full" : ""}`}
+    >
+      {!fullPage && (
         <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 rounded-full bg-black p-4 shadow-lg hover:bg-gray-800 focus:outline-none"
-          aria-label="Open chat"
+          className="bg-white text-black rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-black hover:text-white focus:outline-none transition-colors duration-200"
+          onClick={() => setOpen(!open)}
+          aria-label="Open chat widget"
         >
-          <img src={customerSupportIcon} alt="Chat" className="h-6 w-6 filter invert" />
+          <img src={customerSupportIcon} alt="Support" className="w-8 h-8 hover:invert transition-all duration-200" />
         </button>
       )}
 
-      {/* Panel */}
-      {open && (
-        <div className={wrapperCls}>
+      {(open || fullPage) && (
+        <div
+          className={`bg-white rounded-lg shadow-lg flex flex-col ${fullPage ? "w-full h-full" : "w-80 h-96"}`}
+        >
           {/* Header */}
           {!hideHeader && (
-            <div className="flex items-center justify-between border-b px-4 py-2 sm:px-6 sm:py-3">
-              <span className="text-lg font-semibold">Help Desk</span>
-              <div className="flex items-center space-x-2 sm:space-x-3 text-gray-600">
-                {!fullPage && (
-                  <>
-                    <button
-                      onClick={() => (window.location.href = "/chat")}
-                      aria-label="Fullscreen"
-                    >
-                      <ArrowTopRightOnSquareIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                    </button>
-                    <button onClick={() => setOpen(false)} aria-label="Close">
-                      <ChevronDownIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                    </button>
-                  </>
-                )}
-              </div>
+            <div
+              className={`bg-black text-white p-4 rounded-t-lg flex items-center justify-between ${fullPage ? "" : "cursor-pointer"}`}
+              onClick={() => !fullPage && setOpen(!open)}
+            >
+              <h3 className="text-lg font-semibold">Support Chat</h3>
+              {!fullPage && (
+                <button
+                  className="text-white hover:text-gray-200 focus:outline-none"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close chat widget"
+                >
+                  <ChevronDownIcon className="h-5 w-5" />
+                </button>
+              )}
+               {/* Link to full page chat */}
+               {!fullPage && currentTicket && (
+                  <Link to={`/chat/${currentTicket._id}`} className="text-white hover:text-gray-200 focus:outline-none ml-2" aria-label="Open full chat page">
+                    <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+                  </Link>
+               )}
+            </div>
+          )}
+
+          {/* Error message for socket connection */}
+          {socketError && (
+            <div className="bg-red-100 text-red-800 text-sm p-2 text-center">
+              Connection error. Some features may not be available.
             </div>
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${
-                  msg.from === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((msg, index) => (
+              <div key={index} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    msg.from === "user"
-                      ? "bg-black text-white"
-                      : msg.from === "system"
-                      ? "bg-gray-100 text-gray-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
+                  className={`p-3 rounded-lg max-w-[80%] ${msg.from === "user"
+                    ? "bg-black text-white"
+                    : msg.from === "support" ? "bg-white text-black border border-black" : "bg-gray-100 text-black border border-black" // System messages
+                    }`}
                 >
                   {msg.isLink ? (
-                    <a
-                      href={msg.linkUrl}
-                      className="text-blue-600 hover:text-blue-800 underline"
-                    >
-                      {msg.text}
-                    </a>
+                    <a href={msg.linkUrl} className="text-blue-800 underline hover:no-underline">{msg.text}</a>
                   ) : (
                     msg.text
                   )}
-                  {msg.time && (
-                    <div className="text-xs opacity-75 mt-1">{msg.time}</div>
-                  )}
+                  {msg.time && <div className="text-xs opacity-75 mt-1">{msg.time}</div>} {/* Display timestamp */}
                 </div>
               </div>
             ))}
             {isTyping && (
-              <div className="mb-2">
-                <span className="inline-block rounded-lg px-3 py-1.5 bg-gray-200 text-gray-800">
-                  Typing...
-                </span>
+              <div className="flex justify-start">
+                <div className="p-3 rounded-lg max-w-[80%] bg-gray-200 text-gray-800">
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
               </div>
             )}
-            <div ref={endRef} />
+            <div ref={endRef} /> {/* Auto-scroll anchor */}
           </div>
 
-          {/* Input */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center border-t px-4 py-2 space-x-2 min-w-0"
-          >
-            <div className="relative p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <PhotoIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 z-10" />
+          {/* Input area */}
+          {(!fullPage || (fullPage && (currentTicket || ticketId))) && ( // Only show input if not full page or in a ticket chat
+             <div className="p-4 border-t flex items-center">
+              {fullPage && ( // Only show file upload in full page chat
+                 <button className="mr-2 p-2 text-gray-600 hover:text-gray-800 focus:outline-none" title="Attach File">
+                    <PhotoIcon className="h-6 w-6" />
+                 </button>
+              )}
               <input
-                type="file"
-                accept="image/*"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={e => {
-                  if (e.target.files?.[0]) handleImage(e.target.files[0]);
-                  e.target.value = null;
-                }}
+                type="text"
+                className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-grey-300"
+                placeholder="Type your message..."
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isTyping || (fullPage && !isAdminPresent && !ticketId)} // Disable input if typing or admin not present in full page chat without ticketId
               />
+              <button
+                className="ml-2 bg-black text-white px-4 py-2 rounded-lg font-medium hover:bg-white hover:text-black hover:border hover:border-black transition-all duration-200 disabled:opacity-50 disabled:hover:bg-black disabled:hover:text-white"
+                onClick={() => sendMessage(textInput)}
+                disabled={isTyping || !textInput.trim() || (fullPage && !isAdminPresent && !ticketId)}
+              >
+                Send
+              </button>
             </div>
+          )}
 
-            <input
-              type="text"
-              value={textInput}
-              onChange={e => setTextInput(e.target.value)}
-              placeholder={isAdminPresent ? "Chat with admin..." : "Ask me anything..."}
-              className="flex-grow min-w-0 bg-gray-100 px-4 py-2 rounded-xl focus:outline-none"
-            />
-
-            <button
-              type="submit"
-              className="flex-shrink-0 bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 focus:outline-none disabled:bg-gray-400"
-              disabled={isTyping}
-            >
-              Send
-            </button>
-          </form>
         </div>
       )}
-    </>
+    </div>
   );
 }

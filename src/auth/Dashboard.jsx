@@ -40,28 +40,62 @@ export default function Dashboard() {
       return;
     }
 
-    // Fetch user's tickets
-    fetch("/api/tickets/user")
-      .then((res) => res.json())
-      .then((data) => setTickets(data))
-      .catch(console.error);
-
-    // Fetch user info from backend
-    fetch(`/api/users/me`, {
-      headers: { Authorization: `Bearer ${user.accessToken}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setUserInfo(data);
-        setEditForm({
-          username: data.username || '',
-          gender: data.gender || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          photoURL: data.photoURL || ''
+    // Get the Firebase ID token
+    const getToken = async () => {
+      try {
+        const token = await user.getIdToken();
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        
+        // Fetch user's tickets
+        const ticketsRes = await fetch(`${API_URL}/api/tickets/user`.replace(/([^:]\/)\/+/g, "$1"), {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
-      })
-      .catch(() => setUserInfo(null));
+        
+        if (!ticketsRes.ok) {
+          if (ticketsRes.status === 401) {
+            navigate("/login");
+            return;
+          }
+          throw new Error('Failed to fetch tickets');
+        }
+        
+        const ticketsData = await ticketsRes.json();
+        setTickets(Array.isArray(ticketsData) ? ticketsData : []);
+
+        // Fetch user info
+        const userRes = await fetch(`${API_URL}/api/users/me`.replace(/([^:]\/)\/+/g, "$1"), {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!userRes.ok) {
+          if (userRes.status === 401) {
+            navigate("/login");
+            return;
+          }
+          throw new Error('Failed to fetch user info');
+        }
+
+        const userData = await userRes.json();
+        setUserInfo(userData);
+        setEditForm({
+          username: userData.username || '',
+          gender: userData.gender || '',
+          phone: userData.phone || '',
+          address: userData.address || '',
+          photoURL: userData.photoURL || ''
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setTickets([]);
+        setUserInfo(null);
+      }
+    };
+
+    getToken();
 
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -123,10 +157,11 @@ export default function Dashboard() {
     }
   };
 
+  // Initialize stats with empty array if tickets is not an array
   const stats = {
-    total: tickets.length,
-    open: tickets.filter((t) => t.status === "new" || t.status === "in-progress").length,
-    resolved: tickets.filter((t) => t.status === "resolved").length,
+    total: Array.isArray(tickets) ? tickets.length : 0,
+    open: Array.isArray(tickets) ? tickets.filter((t) => t.status === "new" || t.status === "in-progress").length : 0,
+    resolved: Array.isArray(tickets) ? tickets.filter((t) => t.status === "resolved").length : 0,
   };
 
   const menuItems = [

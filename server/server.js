@@ -12,6 +12,8 @@ import mongoose from 'mongoose';
 import User from './models/User.js';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './config/swagger.js';
+import adminRoutes from './routes/adminRoutes.js';
+import './config/firebase-admin.js'; // Import Firebase Admin configuration
 
 // Load environment variables
 dotenv.config();
@@ -28,17 +30,38 @@ const io = new Server(server, {
   }
 });
 
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // Routes
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working' });
+});
 
 // Error handler
 app.use(errorHandler);
@@ -237,7 +260,13 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 5001;
 
-server.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log('Available routes:');
+  console.log('- GET /api/admin/check');
+  console.log('- POST /api/admin/set-admin/:uid');
+  console.log('- POST /api/admin/remove-admin/:uid');
+});
 
 // MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/hishiro-ticketing-system';
