@@ -1,34 +1,50 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, CheckCircle, AlertCircle, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../firebase';
 
-export function TicketStats() {
+export function TicketStats({ status, priority, assignee }) {
   const [stats, setStats] = useState({
     total: 0,
     open: 0,
     resolved: 0,
     inProgress: 0
   });
+  const [user] = useAuthState(auth);
 
   useEffect(() => {
-    // Fetch ticket stats
-    fetch('/api/tickets')
-      .then(res => res.json())
-      .then(tickets => {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
+    if (!user) return;
+    const fetchStats = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/tickets', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const tickets = await res.json();
+        // Apply filters
+        const filtered = tickets.filter(ticket => {
+          let statusMatch = status === 'all' ||
+            (status === 'open' ? ticket.status === 'new' : ticket.status === status);
+          let priorityMatch = priority === 'all' || ticket.priority?.toLowerCase() === priority;
+          let assigneeMatch = assignee === 'all' || (assignee === 'unassigned' ? !ticket.assignee : ticket.assignee === assignee);
+          return statusMatch && priorityMatch && assigneeMatch;
+        });
         const stats = {
-          total: tickets.length,
-          open: tickets.filter(t => t.status === 'new').length,
-          resolved: tickets.filter(t => t.status === 'resolved').length,
-          inProgress: tickets.filter(t => t.status === 'in-progress').length
+          total: filtered.length,
+          open: filtered.filter(t => t.status === 'new').length,
+          resolved: filtered.filter(t => t.status === 'resolved').length,
+          inProgress: filtered.filter(t => t.status === 'in-progress').length
         };
-        
         setStats(stats);
-      })
-      .catch(err => console.error('Error fetching ticket stats:', err));
-  }, []);
+      } catch (err) {
+        setStats({ total: 0, open: 0, resolved: 0, inProgress: 0 });
+      }
+    };
+    fetchStats();
+  }, [status, priority, assignee, user]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

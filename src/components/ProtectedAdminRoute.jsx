@@ -67,12 +67,13 @@ export default function ProtectedAdminRoute({ children }) {
   }
 
   if (!user) {
-    // Redirect to login but save the attempted URL
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    // Redirect to admin login page and save the attempted URL
+    return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
   }
 
   if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
+    toast.error('Access denied. Admin privileges required.');
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;

@@ -1,7 +1,7 @@
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +11,25 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu"
 import { Bell, Search, Shield, Settings, LogOut } from 'lucide-react'
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { auth } from '../../firebase'
+import { signOut } from 'firebase/auth'
+import { toast } from 'react-hot-toast'
 
 export function Header() {
+  const [user] = useAuthState(auth)
+  const navigate = useNavigate()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth)
+      toast.success('Signed out successfully')
+      navigate('/admin/login')
+    } catch (error) {
+      toast.error('Error signing out')
+    }
+  }
+
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4 gap-4">
@@ -48,8 +65,8 @@ export function Header() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium leading-none">Admin User</p>
-                      <p className="text-xs leading-none text-muted-foreground">admin@company.com</p>
+                      <p className="text-sm font-medium leading-none">{user?.displayName || 'Admin User'}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user?.email || 'admin@company.com'}</p>
                     </div>
                   </div>
                 </div>
@@ -62,7 +79,7 @@ export function Header() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

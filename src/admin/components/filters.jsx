@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { X, Filter } from 'lucide-react'
 
-export function Filters() {
+export function Filters({ status, setStatus, priority, setPriority, assignee, setAssignee, onClear }) {
   return (
     <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg">
       <div className="flex items-center space-x-2">
@@ -11,7 +11,7 @@ export function Filters() {
         <span className="text-sm font-medium">Filters:</span>
       </div>
 
-      <Select>
+      <Select value={status} onValueChange={setStatus}>
         <SelectTrigger className="w-32">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
@@ -24,7 +24,7 @@ export function Filters() {
         </SelectContent>
       </Select>
 
-      <Select>
+      <Select value={priority} onValueChange={setPriority}>
         <SelectTrigger className="w-32">
           <SelectValue placeholder="Priority" />
         </SelectTrigger>
@@ -37,7 +37,7 @@ export function Filters() {
         </SelectContent>
       </Select>
 
-      <Select>
+      <Select value={assignee} onValueChange={setAssignee}>
         <SelectTrigger className="w-40">
           <SelectValue placeholder="Assignee" />
         </SelectTrigger>
@@ -50,17 +50,27 @@ export function Filters() {
       </Select>
 
       <div className="flex items-center space-x-2">
-        <Badge variant="secondary" className="flex items-center space-x-1">
-          <span>Status: Open</span>
-          <X className="h-3 w-3 cursor-pointer" />
-        </Badge>
-        <Badge variant="secondary" className="flex items-center space-x-1">
-          <span>Priority: High</span>
-          <X className="h-3 w-3 cursor-pointer" />
-        </Badge>
+        {status !== 'all' && (
+          <Badge variant="secondary" className="flex items-center space-x-1">
+            <span>Status: {status.charAt(0).toUpperCase() + status.slice(1)}</span>
+            <X className="h-3 w-3 cursor-pointer" onClick={() => setStatus('all')} />
+          </Badge>
+        )}
+        {priority !== 'all' && (
+          <Badge variant="secondary" className="flex items-center space-x-1">
+            <span>Priority: {priority.charAt(0).toUpperCase() + priority.slice(1)}</span>
+            <X className="h-3 w-3 cursor-pointer" onClick={() => setPriority('all')} />
+          </Badge>
+        )}
+        {assignee !== 'all' && (
+          <Badge variant="secondary" className="flex items-center space-x-1">
+            <span>Assignee: {assignee.charAt(0).toUpperCase() + assignee.slice(1)}</span>
+            <X className="h-3 w-3 cursor-pointer" onClick={() => setAssignee('all')} />
+          </Badge>
+        )}
       </div>
 
-      <Button variant="outline" size="sm">
+      <Button variant="outline" size="sm" onClick={onClear}>
         Clear All
       </Button>
     </div>

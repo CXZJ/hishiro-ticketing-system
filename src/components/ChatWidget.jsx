@@ -229,9 +229,14 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${user.accessToken}`
+              Authorization: `Bearer ${await user.getIdToken()}`
             },
-            body: JSON.stringify({ message: txt, subject: txt.substring(0, 50) + '...' }) // Using message for subject for now
+            body: JSON.stringify({
+              message: txt,
+              subject: txt.substring(0, 50) + '...',
+              userId: user.uid,
+              botResponse: response.text
+            })
           });
 
           if (!createTicketResponse.ok) {
@@ -251,14 +256,12 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
           console.log('Ticket created successfully:', newTicket);
           setCurrentTicket(newTicket);
 
-          // Update messages to indicate ticket created and provide link
+          // Update messages to indicate ticket created and provide info with dashboard button
           setMessages(prev => [...prev, {
             from: 'system',
-            type: 'text',
-            text: `A support ticket has been created for your issue. Please click here to continue the conversation with our support team.`,
+            type: 'dashboard-link', // custom type for rendering a button
+            text: `A support ticket has been created for your issue.`,
             time: new Date().toLocaleTimeString(),
-            isLink: true,
-            linkUrl: `/chat/${newTicket._id}`
           }]);
 
           // Join the ticket room via socket after successful creation
@@ -305,13 +308,13 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
     <div
       className={`fixed bottom-4 right-4 z-50 ${fullPage ? "!static !bottom-auto !right-auto !z-auto w-full h-full" : ""}`}
     >
-      {!fullPage && (
+      {!fullPage && !open && (
         <button
-          className="bg-white text-black rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-black hover:text-white focus:outline-none transition-colors duration-200"
+          className="group bg-white text-black rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-black hover:text-white focus:outline-none transition-colors duration-200"
           onClick={() => setOpen(!open)}
           aria-label="Open chat widget"
         >
-          <img src={customerSupportIcon} alt="Support" className="w-8 h-8 hover:invert transition-all duration-200" />
+          <img src={customerSupportIcon} alt="Support" className="w-8 h-8 transition-all duration-200 group-hover:invert" />
         </button>
       )}
 
@@ -358,10 +361,20 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
                 <div
                   className={`p-3 rounded-lg max-w-[80%] ${msg.from === "user"
                     ? "bg-black text-white"
-                    : msg.from === "support" ? "bg-white text-black border border-black" : "bg-gray-100 text-black border border-black" // System messages
+                    : msg.from === "support" ? "bg-white text-black border border-black" : "bg-gray-100 text-black border-black" // System messages
                     }`}
                 >
-                  {msg.isLink ? (
+                  {msg.type === 'dashboard-link' ? (
+                    <div className="flex flex-col items-start gap-2">
+                      <span>{msg.text}</span>
+                      <a
+                        href="/dashboard"
+                        className="inline-block bg-black text-white px-3 py-1 rounded hover:bg-gray-900 transition-colors duration-150 text-sm font-medium mt-1"
+                      >
+                        Go to My Dashboard
+                      </a>
+                    </div>
+                  ) : msg.isLink ? (
                     <a href={msg.linkUrl} className="text-blue-800 underline hover:no-underline">{msg.text}</a>
                   ) : (
                     msg.text

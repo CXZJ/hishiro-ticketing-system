@@ -40,6 +40,31 @@ export default function Dashboard() {
       return;
     }
 
+    // Check if user is admin and redirect if so
+    const checkAdmin = async () => {
+      try {
+        const token = await user.getIdToken();
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const url = new URL('/api/admin/check', API_URL).toString();
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.isAdmin) {
+            navigate('/admin');
+            return;
+          }
+        }
+      } catch (err) {
+        // ignore error, treat as not admin
+      }
+    };
+    checkAdmin();
+
     // Get the Firebase ID token
     const getToken = async () => {
       try {
@@ -138,11 +163,12 @@ export default function Dashboard() {
   const handleEditSave = async () => {
     setSaving(true);
     try {
+      const token = await user.getIdToken();
       const res = await fetch('/api/users/me', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.accessToken}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(editForm)
       });

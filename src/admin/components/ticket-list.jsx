@@ -39,11 +39,22 @@ function getStatusColor(status) {
   }
 }
 
-export function TicketList() {
+export function TicketList({ status, priority, assignee }) {
   const [tickets, setTickets] = useState([]);
   const [socket, setSocket] = useState(null);
   const [user, loading] = useAuthState(auth);
   const navigate = useNavigate();
+
+  // Helper to filter tickets client-side (if backend doesn't support query params)
+  const filterTickets = (tickets) => {
+    return tickets.filter(ticket => {
+      let statusMatch = status === 'all' ||
+        (status === 'open' ? ticket.status === 'new' : ticket.status === status);
+      let priorityMatch = priority === 'all' || ticket.priority?.toLowerCase() === priority;
+      let assigneeMatch = assignee === 'all' || (assignee === 'unassigned' ? !ticket.assignee : ticket.assignee === assignee);
+      return statusMatch && priorityMatch && assigneeMatch;
+    });
+  };
 
   useEffect(() => {
     if (loading) return; // Wait for user loading to complete
@@ -61,9 +72,10 @@ export function TicketList() {
     // Fetch initial tickets
     const fetchTickets = async () => {
       try {
+        const token = await user.getIdToken();
         const res = await fetch('/api/tickets', {
           headers: {
-            Authorization: `Bearer ${user.accessToken}`
+            Authorization: `Bearer ${token}`
           }
         });
         if (!res.ok) {
@@ -75,7 +87,7 @@ export function TicketList() {
           throw new Error(`Failed to fetch tickets: ${res.status} ${res.statusText}`);
         }
         const data = await res.json();
-        setTickets(data);
+        setTickets(filterTickets(data));
       } catch (err) {
         console.error('Error fetching tickets:', err);
         // Handle other potential errors, maybe show a message to the user
@@ -88,23 +100,28 @@ export function TicketList() {
     newSocket.on('newTicket', (ticket) => {
       setTickets(prev => {
         if (!prev.find(t => t._id === ticket._id)) {
-          return [ticket, ...prev];
+          const updated = [ticket, ...prev];
+          return filterTickets(updated);
         }
-        return prev;
+        return filterTickets(prev);
       });
     });
 
     // Listen for ticket updates
     newSocket.on('ticketUpdated', (updatedTicket) => {
-      setTickets(prev => prev.map(ticket => 
-        ticket._id === updatedTicket._id ? updatedTicket : ticket
-      ));
+      setTickets(prev => {
+        const updated = prev.map(ticket => 
+          ticket._id === updatedTicket._id ? updatedTicket : ticket
+        );
+        return filterTickets(updated);
+      });
     });
 
     return () => {
       newSocket.disconnect();
     };
-  }, [user, loading, navigate]);
+  // re-run when filters change
+  }, [user, loading, navigate, status, priority, assignee]);
 
   if (loading) {
     // Optionally show a loading indicator while user state is being determined

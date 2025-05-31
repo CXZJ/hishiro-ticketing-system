@@ -12,7 +12,6 @@ import GucciHero    from './components/VideoHero'
 import ProductList  from './components/ProductList'
 import Footer       from './components/Footer'
 import ChatWidget   from './components/ChatWidget'
-import ChatPage     from './components/ChatPage'
 import SearchOverlay from './components/SearchOverlay'
 
 // auth
@@ -21,6 +20,7 @@ import SignUp       from './auth/SignUp'
 import Reset        from './auth/Reset'
 import Profile      from './auth/Profile'
 import Dashboard    from './auth/Dashboard'
+import AdminLogin   from './auth/AdminLogin'
 
 // admin
 import AdminDashboard from './admin/pages/Dashboard'
@@ -150,9 +150,8 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Full-page chat */}
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/chat/:ticketId" element={<ChatPage />} />
+            {/* Admin auth */}
+            <Route path="/admin/login" element={<AdminLogin />} />
 
             {/* Client storefront */}
             <Route path="/" element={<ClientLayout />} />

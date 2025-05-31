@@ -1,11 +1,16 @@
 // src/admin/pages/Tickets.jsx
 
+import { useState } from 'react';
 import { Header } from "../components/header"
 import { Sidebar } from "../components/sidebar"
 import { TicketList } from "../components/ticket-list"
 import { Filters } from "../components/filters"
 
 export default function Tickets() {
+  const [status, setStatus] = useState('all');
+  const [priority, setPriority] = useState('all');
+  const [assignee, setAssignee] = useState('all');
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar className="border-r" />
@@ -19,8 +24,20 @@ export default function Tickets() {
             </div>
 
             <div className="space-y-4">
-              <Filters />
-              <TicketList />
+              <Filters
+                status={status}
+                setStatus={setStatus}
+                priority={priority}
+                setPriority={setPriority}
+                assignee={assignee}
+                setAssignee={setAssignee}
+                onClear={() => {
+                  setStatus('all');
+                  setPriority('all');
+                  setAssignee('all');
+                }}
+              />
+              <TicketList status={status} priority={priority} assignee={assignee} />
             </div>
           </div>
         </main>
