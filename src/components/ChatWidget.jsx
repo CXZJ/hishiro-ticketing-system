@@ -212,7 +212,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
         // Add bot response
         setMessages((prev) => [...prev, { from: "support", type: "text", text: response.text }]);
         
-        // If ticket is needed, check if user is logged in first
+        // If ticket is needed and we have a problem description
         if (response.needsTicket) {
           if (!user) {
             setMessages((prev) => [...prev, { 
@@ -224,6 +224,12 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
             return;
           }
 
+          // Get the problem description from the conversation history
+          const problemDescription = messages
+            .filter(msg => msg.from === "user" && msg.text.length > 50)
+            .map(msg => msg.text)
+            .join("\n\n");
+
           console.log('Attempting to create ticket via API');
           const createTicketResponse = await fetch('/api/tickets', {
             method: 'POST',
@@ -232,8 +238,8 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
               Authorization: `Bearer ${await user.getIdToken()}`
             },
             body: JSON.stringify({
-              message: txt,
-              subject: txt.substring(0, 50) + '...',
+              message: problemDescription || txt, // Use the full problem description if available
+              subject: response.subject || 'Support Ticket', // Use AI-generated subject or fallback
               userId: user.uid,
               botResponse: response.text
             })
@@ -244,10 +250,8 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
             console.error('Ticket creation failed:', createTicketResponse.status, errorBody);
             setMessages((prev) => [...prev, { from: "system", type: "text", text: `Failed to create ticket. Please try again later. (${createTicketResponse.status})` }]);
             setIsTyping(false);
-            // Optionally redirect to login if 401
             if (createTicketResponse.status === 401) {
-               toast.error('Please log in to create a ticket.');
-              // Consider a more explicit redirect or modal for login
+              toast.error('Please log in to create a ticket.');
             }
             return;
           }
@@ -259,7 +263,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
           // Update messages to indicate ticket created and provide info with dashboard button
           setMessages(prev => [...prev, {
             from: 'system',
-            type: 'dashboard-link', // custom type for rendering a button
+            type: 'dashboard-link',
             text: `A support ticket has been created for your issue.`,
             time: new Date().toLocaleTimeString(),
           }]);
@@ -269,9 +273,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
             socketRef.current.emit('userJoinTicketRoom', newTicket._id);
             console.log('Emitting userJoinTicketRoom after creation for ticket:', newTicket._id);
           }
-
-
-        } // else if not fullPage and not needsTicket, then maybe just a regular chat message processed by bot
+        }
 
         setIsTyping(false);
       } catch (error) {

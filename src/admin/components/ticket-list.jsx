@@ -156,7 +156,7 @@ export function TicketList({ status, priority, assignee, search }) {
                       {ticket.status}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-sm sm:text-base">{ticket.message.substring(0, 50)}...</h3>
+                  <h3 className="font-semibold text-sm sm:text-base">{ticket.subject}</h3>
                   <div className="flex flex-wrap items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
                     <span>User ID: {ticket.userId}</span>
                     <span>•</span>

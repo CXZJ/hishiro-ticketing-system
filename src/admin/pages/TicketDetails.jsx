@@ -189,7 +189,7 @@ export default function TicketDetails() {
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h1 className="text-2xl font-semibold mb-2">#{ticket._id.substring(0, 8)} - {ticket.message.substring(0, 50)}...</h1>
+                  <h1 className="text-2xl font-semibold mb-2">#{ticket._id.substring(0, 8)} - {ticket.subject}</h1>
                   <div className="flex items-center text-gray-600">
                     <span className="mr-4">User ID: {ticket.userId}</span>
                     <span>{new Date(ticket.createdAt).toLocaleString()}</span>
