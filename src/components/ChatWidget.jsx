@@ -230,6 +230,17 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
             .map(msg => msg.text)
             .join("\n\n");
 
+          // Generate a proper subject from the problem description
+          const generateSubject = (description) => {
+            // Get the first sentence or first 100 characters
+            const firstSentence = description.split(/[.!?]/)[0].trim();
+            if (firstSentence.length <= 100) {
+              return firstSentence;
+            }
+            // If first sentence is too long, take first 100 characters and add ellipsis
+            return description.substring(0, 100).trim() + '...';
+          };
+
           console.log('Attempting to create ticket via API');
           const createTicketResponse = await fetch('/api/tickets', {
             method: 'POST',
@@ -239,7 +250,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
             },
             body: JSON.stringify({
               message: problemDescription || txt, // Use the full problem description if available
-              subject: response.subject || 'Support Ticket', // Use AI-generated subject or fallback
+              subject: generateSubject(problemDescription || txt), // Generate proper subject
               userId: user.uid,
               botResponse: response.text
             })

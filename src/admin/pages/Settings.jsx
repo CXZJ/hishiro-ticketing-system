@@ -12,6 +12,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
+import AdminLayout from '../AdminLayout';
 
 export default function Settings() {
   const [user, loading] = useAuthState(auth);
@@ -164,348 +165,344 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-background">
-      <Sidebar className="border-r" />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">Manage your account settings and preferences</p>
-            </div>
+    <AdminLayout>
+      <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Manage your account settings and preferences</p>
+          </div>
 
-            <Tabs defaultValue="profile" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="security">Security</TabsTrigger>
-                <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="profile" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="security">Security</TabsTrigger>
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="profile" className="space-y-4">
-                <Card>
-                  <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between">
-                    <div>
-                      <CardTitle>Profile Information</CardTitle>
-                      <CardDescription>
-                        Update your profile information
-                      </CardDescription>
-                    </div>
-                    {!editMode && (
-                      <Button onClick={() => setEditMode(true)}>
-                        Edit Profile
-                      </Button>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0">
-                      <Avatar className="h-20 w-20">
-                        <AvatarImage src={editMode && editForm.photoURL ? editForm.photoURL : (userInfo?.photoURL || `https://ui-avatars.com/api/?name=${user?.email}`)} alt="Admin" />
-                        <AvatarFallback>{userInfo?.username?.[0] || user?.email?.[0] || 'A'}</AvatarFallback>
-                      </Avatar>
-                      <div className="space-y-1">
-                        {editMode ? (
-                          <>
-                            <Button variant="outline" size="sm" asChild>
-                              <label htmlFor="photo-upload" className="cursor-pointer">Change Avatar</label>
-                            </Button>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handlePhotoChange}
-                              className="hidden"
-                              id="photo-upload"
-                            />
-                          </>
-                        ) : null}
-                        <p className="text-sm text-muted-foreground">
-                          JPG or PNG. Max size of 2MB.
-                        </p>
-                      </div>
-                    </div>
-
-                    {editMode ? (
-                      <form className="grid gap-4 md:grid-cols-2" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
-                        <div className="space-y-2">
-                          <Label htmlFor="username">Full Name</Label>
-                          <div className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              id="username" 
-                              name="username"
-                              value={editForm.username}
-                              onChange={handleEditChange}
-                              placeholder="Enter your full name"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email</Label>
-                          <div className="flex items-center space-x-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              id="email" 
-                              type="email" 
-                              value={user?.email || ''} 
-                              disabled 
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">Phone</Label>
-                          <div className="flex items-center space-x-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              id="phone" 
-                              name="phone"
-                              value={editForm.phone}
-                              onChange={handleEditChange}
-                              placeholder="Enter your phone number"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address">Address</Label>
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              id="address" 
-                              name="address"
-                              value={editForm.address}
-                              onChange={handleEditChange}
-                              placeholder="Enter your address"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="gender">Gender</Label>
-                          <div className="flex items-center space-x-2">
-                            {getGenderIcon(editForm.gender)}
-                            <select
-                              id="gender"
-                              name="gender"
-                              value={editForm.gender}
-                              onChange={handleEditChange}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                            >
-                              <option value="">-</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div className="md:col-span-2 flex justify-end space-x-2">
-                          <Button 
-                            variant="outline" 
-                            type="button"
-                            onClick={() => {
-                              setEditMode(false);
-                              setEditForm({
-                                username: userInfo?.username || '',
-                                gender: userInfo?.gender || '',
-                                phone: userInfo?.phone || '',
-                                address: userInfo?.address || '',
-                                photoURL: userInfo?.photoURL || ''
-                              });
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                          <Button type="submit" disabled={saving}>
-                            {saving ? 'Saving...' : 'Save Changes'}
-                          </Button>
-                        </div>
-                      </form>
-                    ) : (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Full Name</Label>
-                          <div className="flex items-center space-x-2 min-h-[40px]">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{userInfo?.username || '-'}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Email</Label>
-                          <div className="flex items-center space-x-2 min-h-[40px]">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{user?.email || '-'}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Phone</Label>
-                          <div className="flex items-center space-x-2 min-h-[40px]">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{userInfo?.phone || '-'}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Address</Label>
-                          <div className="flex items-center space-x-2 min-h-[40px]">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{userInfo?.address || '-'}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Gender</Label>
-                          <div className="flex items-center space-x-2 min-h-[40px]">
-                            {getGenderIcon(userInfo?.gender)}
-                            <span className="font-medium">{userInfo?.gender || '-'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="security" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Security Settings</CardTitle>
+            <TabsContent value="profile" className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between">
+                  <div>
+                    <CardTitle>Profile Information</CardTitle>
                     <CardDescription>
-                      Update your password and security preferences
+                      Update your profile information
                     </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                  </div>
+                  {!editMode && (
+                    <Button onClick={() => setEditMode(true)}>
+                      Edit Profile
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src={editMode && editForm.photoURL ? editForm.photoURL : (userInfo?.photoURL || `https://ui-avatars.com/api/?name=${user?.email}`)} alt="Admin" />
+                      <AvatarFallback>{userInfo?.username?.[0] || user?.email?.[0] || 'A'}</AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                      {editMode ? (
+                        <>
+                          <Button variant="outline" size="sm" asChild>
+                            <label htmlFor="photo-upload" className="cursor-pointer">Change Avatar</label>
+                          </Button>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoChange}
+                            className="hidden"
+                            id="photo-upload"
+                          />
+                        </>
+                      ) : null}
+                      <p className="text-sm text-muted-foreground">
+                        JPG or PNG. Max size of 2MB.
+                      </p>
+                    </div>
+                  </div>
+
+                  {editMode ? (
+                    <form className="grid gap-4 md:grid-cols-2" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
                       <div className="space-y-2">
-                        <Label htmlFor="current-password">Current Password</Label>
+                        <Label htmlFor="username">Full Name</Label>
                         <div className="flex items-center space-x-2">
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="current-password"
-                            type="password"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            required
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            id="username" 
+                            name="username"
+                            value={editForm.username}
+                            onChange={handleEditChange}
+                            placeholder="Enter your full name"
                           />
                         </div>
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="new-password">New Password</Label>
+                        <Label htmlFor="email">Email</Label>
                         <div className="flex items-center space-x-2">
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="new-password"
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            required
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            id="email" 
+                            type="email" 
+                            value={user?.email || ''} 
+                            disabled 
                           />
                         </div>
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Label htmlFor="phone">Phone</Label>
                         <div className="flex items-center space-x-2">
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="confirm-password"
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            id="phone" 
+                            name="phone"
+                            value={editForm.phone}
+                            onChange={handleEditChange}
+                            placeholder="Enter your phone number"
                           />
                         </div>
                       </div>
-
-                      {passwordError && (
-                        <p className="text-sm text-red-500">{passwordError}</p>
-                      )}
-                      {passwordSuccess && (
-                        <p className="text-sm text-green-500">{passwordSuccess}</p>
-                      )}
-
-                      <div className="flex justify-end">
-                        <Button type="submit" disabled={passwordLoading}>
-                          {passwordLoading ? 'Updating...' : 'Update Password'}
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Address</Label>
+                        <div className="flex items-center space-x-2">
+                          <Building className="h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            id="address" 
+                            name="address"
+                            value={editForm.address}
+                            onChange={handleEditChange}
+                            placeholder="Enter your address"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="gender">Gender</Label>
+                        <div className="flex items-center space-x-2">
+                          {getGenderIcon(editForm.gender)}
+                          <select
+                            id="gender"
+                            name="gender"
+                            value={editForm.gender}
+                            onChange={handleEditChange}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          >
+                            <option value="">-</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 flex justify-end space-x-2">
+                        <Button 
+                          variant="outline" 
+                          type="button"
+                          onClick={() => {
+                            setEditMode(false);
+                            setEditForm({
+                              username: userInfo?.username || '',
+                              gender: userInfo?.gender || '',
+                              phone: userInfo?.phone || '',
+                              address: userInfo?.address || '',
+                              photoURL: userInfo?.photoURL || ''
+                            });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={saving}>
+                          {saving ? 'Saving...' : 'Save Changes'}
                         </Button>
                       </div>
                     </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="notifications" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Notification Preferences</CardTitle>
-                    <CardDescription>
-                      Configure how you receive notifications
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Email Notifications</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Receive notifications about your account activity
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Bell className="h-4 w-4 text-muted-foreground" />
-                          <Input type="checkbox" className="h-4 w-4" defaultChecked />
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Full Name</Label>
+                        <div className="flex items-center space-x-2 min-h-[40px]">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{userInfo?.username || '-'}</span>
                         </div>
                       </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>New Ticket Alerts</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Get notified when new tickets are assigned to you
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Bell className="h-4 w-4 text-muted-foreground" />
-                          <Input type="checkbox" className="h-4 w-4" defaultChecked />
+                      <div className="space-y-2">
+                        <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Email</Label>
+                        <div className="flex items-center space-x-2 min-h-[40px]">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{user?.email || '-'}</span>
                         </div>
                       </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Ticket Updates</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Receive notifications about ticket status changes
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Bell className="h-4 w-4 text-muted-foreground" />
-                          <Input type="checkbox" className="h-4 w-4" defaultChecked />
+                      <div className="space-y-2">
+                        <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Phone</Label>
+                        <div className="flex items-center space-x-2 min-h-[40px]">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{userInfo?.phone || '-'}</span>
                         </div>
                       </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Dark Mode</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Switch between light and dark theme
-                          </p>
+                      <div className="space-y-2">
+                        <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Address</Label>
+                        <div className="flex items-center space-x-2 min-h-[40px]">
+                          <Building className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{userInfo?.address || '-'}</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Moon className="h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            type="checkbox" 
-                            className="h-4 w-4" 
-                            checked={darkMode}
-                            onChange={(e) => setDarkMode(e.target.checked)}
-                          />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Gender</Label>
+                        <div className="flex items-center space-x-2 min-h-[40px]">
+                          {getGenderIcon(userInfo?.gender)}
+                          <span className="font-medium">{userInfo?.gender || '-'}</span>
                         </div>
                       </div>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="security" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Security Settings</CardTitle>
+                  <CardDescription>
+                    Update your password and security preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <form onSubmit={handlePasswordChange} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="current-password">Current Password</Label>
+                      <div className="flex items-center space-x-2">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="current-password"
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <div className="flex items-center space-x-2">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="new-password"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm New Password</Label>
+                      <div className="flex items-center space-x-2">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {passwordError && (
+                      <p className="text-sm text-red-500">{passwordError}</p>
+                    )}
+                    {passwordSuccess && (
+                      <p className="text-sm text-green-500">{passwordSuccess}</p>
+                    )}
 
                     <div className="flex justify-end">
-                      <Button>Save Preferences</Button>
+                      <Button type="submit" disabled={passwordLoading}>
+                        {passwordLoading ? 'Updating...' : 'Update Password'}
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
-      </div>
-    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="notifications" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notification Preferences</CardTitle>
+                  <CardDescription>
+                    Configure how you receive notifications
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Email Notifications</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications about your account activity
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                        <Input type="checkbox" className="h-4 w-4" defaultChecked />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>New Ticket Alerts</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Get notified when new tickets are assigned to you
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                        <Input type="checkbox" className="h-4 w-4" defaultChecked />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Ticket Updates</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive notifications about ticket status changes
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                        <Input type="checkbox" className="h-4 w-4" defaultChecked />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Dark Mode</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Switch between light and dark theme
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Moon className="h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          type="checkbox" 
+                          className="h-4 w-4" 
+                          checked={darkMode}
+                          onChange={(e) => setDarkMode(e.target.checked)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button>Save Preferences</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </AdminLayout>
   );
 } 

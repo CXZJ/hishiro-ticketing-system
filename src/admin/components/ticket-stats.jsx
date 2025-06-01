@@ -24,19 +24,11 @@ export function TicketStats({ status, priority, assignee }) {
           }
         });
         const tickets = await res.json();
-        // Apply filters
-        const filtered = tickets.filter(ticket => {
-          let statusMatch = status === 'all' ||
-            (status === 'open' ? ticket.status === 'new' : ticket.status === status);
-          let priorityMatch = priority === 'all' || ticket.priority?.toLowerCase() === priority;
-          let assigneeMatch = assignee === 'all' || (assignee === 'unassigned' ? !ticket.assignee : ticket.assignee === assignee);
-          return statusMatch && priorityMatch && assigneeMatch;
-        });
         const stats = {
-          total: filtered.length,
-          open: filtered.filter(t => t.status === 'new').length,
-          resolved: filtered.filter(t => t.status === 'resolved').length,
-          inProgress: filtered.filter(t => t.status === 'in-progress').length
+          total: tickets.length,
+          open: tickets.filter(t => t.status === 'new').length,
+          resolved: tickets.filter(t => t.status === 'resolved').length,
+          inProgress: tickets.filter(t => t.status === 'in-progress').length
         };
         setStats(stats);
       } catch (err) {
@@ -44,7 +36,7 @@ export function TicketStats({ status, priority, assignee }) {
       }
     };
     fetchStats();
-  }, [status, priority, assignee, user]);
+  }, [status, priority, user]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

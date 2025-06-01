@@ -1,7 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Sidebar } from '../components/sidebar';
-import { Header } from '../components/header';
-import { getAuth } from 'firebase/auth';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Mail, Phone, MapPin, User, Shield, MoreVertical, Edit, Trash2, UserPlus } from 'lucide-react';
@@ -14,6 +11,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'react-hot-toast';
+import AdminLayout from '../AdminLayout';
+import { getAuth } from 'firebase/auth';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -87,12 +86,15 @@ export default function Users() {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
       const token = await user.getIdToken();
       const res = await fetch(`/api/users/${selectedUser._id || selectedUser.uid}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(editForm),
       });
@@ -128,117 +130,113 @@ export default function Users() {
     });
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800">
-      <Sidebar className="border-r" />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
-          <div className="w-full max-w-7xl mx-auto">
-            {/* Header Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Users List</h1>
-                <p className="text-muted-foreground">Manage your registered users</p>
-              </div>
-              <Button className="bg-primary hover:bg-primary/90">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add New User
-              </Button>
+    <AdminLayout>
+      <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
+        <div className="w-full max-w-7xl mx-auto">
+          {/* Header Section */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Users List</h1>
+              <p className="text-muted-foreground">Manage your registered users</p>
             </div>
+            <Button className="bg-primary hover:bg-primary/90">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add New User
+            </Button>
+          </div>
 
-            {/* Search and Filter Section */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          {/* Search and Filter Section */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
+          </div>
 
-            {/* Users Grid */}
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : error ? (
-              <div className="text-red-600 bg-red-50 p-4 rounded-lg">{error}</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredUsers.map(user => (
-                  <div
-                    key={user._id || user.uid || user.email}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
-                  >
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-12 w-12 border-2 border-primary/20">
-                            <AvatarImage src={user.photoURL} alt={user.username || user.email} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold text-lg">{user.username || user.displayName || 'No Name'}</h3>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleRowClick(user)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit User
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{user.phone || 'No phone number'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span>{user.address || 'No address'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{user.gender || 'Not specified'}</span>
+          {/* Users Grid */}
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : error ? (
+            <div className="text-red-600 bg-red-50 p-4 rounded-lg">{error}</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {filteredUsers.map(user => (
+                <div
+                  key={user._id || user.uid || user.email}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 border-2 border-primary/20">
+                          <AvatarImage src={user.photoURL} alt={user.username || user.email} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold text-lg">{user.username || user.displayName || 'No Name'}</h3>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleRowClick(user)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit User
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
 
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="flex items-center justify-between">
-                          <Badge variant={user.role === 'agent' ? 'default' : 'secondary'}>
-                            {user.role || 'User'}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            Joined {new Date(user.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{user.phone || 'No phone number'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{user.address || 'No address'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>{user.gender || 'Not specified'}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <Badge variant={user.role === 'agent' ? 'default' : 'secondary'}>
+                          {user.role || 'User'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Joined {new Date(user.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
 
       {/* User Details Drawer */}
       {drawerOpen && selectedUser && (
@@ -352,6 +350,6 @@ export default function Users() {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 } 

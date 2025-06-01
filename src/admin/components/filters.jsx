@@ -3,7 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { X, Filter } from 'lucide-react'
 
-export function Filters({ status, setStatus, priority, setPriority, assignee, setAssignee, onClear }) {
+// Filters component for the dashboard page
+export function Filters({ status, setStatus, priority, setPriority, onClear }) {
   return (
     <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg">
       <div className="flex items-center space-x-2">
@@ -30,22 +31,9 @@ export function Filters({ status, setStatus, priority, setPriority, assignee, se
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Priority</SelectItem>
-          <SelectItem value="critical">Critical</SelectItem>
           <SelectItem value="high">High</SelectItem>
           <SelectItem value="medium">Medium</SelectItem>
           <SelectItem value="low">Low</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select value={assignee} onValueChange={setAssignee}>
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="Assignee" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Agents</SelectItem>
-          <SelectItem value="sarah">Sarah Wilson</SelectItem>
-          <SelectItem value="mike">Mike Johnson</SelectItem>
-          <SelectItem value="unassigned">Unassigned</SelectItem>
         </SelectContent>
       </Select>
 
@@ -60,12 +48,6 @@ export function Filters({ status, setStatus, priority, setPriority, assignee, se
           <Badge variant="secondary" className="flex items-center space-x-1">
             <span>Priority: {priority.charAt(0).toUpperCase() + priority.slice(1)}</span>
             <X className="h-3 w-3 cursor-pointer" onClick={() => setPriority('all')} />
-          </Badge>
-        )}
-        {assignee !== 'all' && (
-          <Badge variant="secondary" className="flex items-center space-x-1">
-            <span>Assignee: {assignee.charAt(0).toUpperCase() + assignee.slice(1)}</span>
-            <X className="h-3 w-3 cursor-pointer" onClick={() => setAssignee('all')} />
           </Badge>
         )}
       </div>

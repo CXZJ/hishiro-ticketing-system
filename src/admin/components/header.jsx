@@ -56,7 +56,7 @@ export function Header({ onMenuClick }) {
 
   return (
     <header className="border-b">
-      <div className="flex h-16 items-center px-4 gap-4">
+      <div className="hidden md:flex h-16 items-center px-4 gap-4">
         <button
           className="md:hidden p-2 rounded hover:bg-gray-200 focus:outline-none"
           onClick={onMenuClick}

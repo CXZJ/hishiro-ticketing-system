@@ -51,12 +51,11 @@ export function TicketList({ status, priority, assignee, search }) {
       let statusMatch = status === 'all' ||
         (status === 'open' ? ticket.status === 'new' : ticket.status === status);
       let priorityMatch = priority === 'all' || ticket.priority?.toLowerCase() === priority;
-      let assigneeMatch = assignee === 'all' || (assignee === 'unassigned' ? !ticket.assignee : ticket.assignee === assignee);
       let searchMatch = !search ||
         ticket._id?.toLowerCase().includes(search.toLowerCase()) ||
         ticket.message?.toLowerCase().includes(search.toLowerCase()) ||
         ticket.userEmail?.toLowerCase().includes(search.toLowerCase());
-      return statusMatch && priorityMatch && assigneeMatch && searchMatch;
+      return statusMatch && priorityMatch && searchMatch;
     });
   };
 
@@ -125,7 +124,7 @@ export function TicketList({ status, priority, assignee, search }) {
       newSocket.disconnect();
     };
   // re-run when filters change
-  }, [user, loading, navigate, status, priority, assignee, search]);
+  }, [user, loading, navigate, status, priority, search]);
 
   if (loading) {
     // Optionally show a loading indicator while user state is being determined
@@ -145,7 +144,7 @@ export function TicketList({ status, priority, assignee, search }) {
           {tickets.map((ticket) => (
             <div
               key={ticket._id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-2"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-2 w-full"
             >
               <div className="flex items-center space-x-4 flex-1">
                 <div className="flex flex-col space-y-1">

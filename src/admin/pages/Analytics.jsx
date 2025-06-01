@@ -1,5 +1,4 @@
-import { Header } from "../components/header"
-import { Sidebar } from "../components/sidebar"
+import AdminLayout from '../AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -109,159 +108,145 @@ export default function Analytics() {
     id: t._id,
     type: t.status === 'resolved' ? 'ticket_resolved' : 'ticket_created',
     title: t.subject,
-    agent: t.assignedTo || null,
-    customer: t.userId,
     time: new Date(t.createdAt).toLocaleString(),
     priority: t.priority,
   }));
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar className="border-r" />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-              <p className="text-muted-foreground">Track ticket performance and team metrics</p>
-            </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+          <p className="text-muted-foreground">Track ticket performance and team metrics</p>
+        </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{total}</div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                    <span>{monthlyTrend} from last month</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{open}</div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <ArrowDownRight className="mr-1 h-3 w-3 text-green-500" />
-                    <span>{weeklyTrend} from last week</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Resolution Rate</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {total > 0 ? Math.round((resolved / total) * 100) : 0}%
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {resolved} tickets resolved
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Satisfaction Rate</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{satisfactionRate}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Based on customer feedback
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{total}</div>
+              <div className="flex items-center text-xs text-muted-foreground">
+                <TrendingUp className="mr-1 h-3 w-3" />
+                <span>{monthlyTrend} from last month</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{open}</div>
+              <div className="flex items-center text-xs text-muted-foreground">
+                <ArrowDownRight className="mr-1 h-3 w-3 text-green-500" />
+                <span>{weeklyTrend} from last week</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Resolution Rate</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {total > 0 ? Math.round((resolved / total) * 100) : 0}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {resolved} tickets resolved
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Satisfaction Rate</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{satisfactionRate}</div>
+              <p className="text-xs text-muted-foreground">
+                Based on customer feedback
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ticket Status Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-center items-center" style={{ height: 250 }}>
-                    <div style={{ width: 250, height: 250 }}>
-                      <Bar data={statusBarData} options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true } }
-                      }} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Priority Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-center items-center" style={{ height: 250 }}>
-                    <div style={{ width: 250, height: 250 }}>
-                      <Doughnut data={priorityDoughnutData} options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom' } }
-                      }} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.length === 0 && (
-                    <div className="text-center text-muted-foreground">No recent activity</div>
-                  )}
-                  {recentActivity.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-4">
-                        {getActivityIcon(activity.type)}
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">{activity.title}</p>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            {activity.agent && (
-                              <span>Assigned to {activity.agent}</span>
-                            )}
-                            {activity.customer && (
-                              <span>From {activity.customer}</span>
-                            )}
-                            <span>•</span>
-                            <span>{activity.time}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {activity.priority && (
-                        <Badge variant="secondary" className="bg-red-100 text-red-800">
-                          {activity.priority} priority
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Ticket Status Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center items-center" style={{ height: 250 }}>
+                <div style={{ width: '100%', height: 250 }}>
+                  <Bar data={statusBarData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                  }} />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Priority Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center items-center" style={{ height: 250 }}>
+                <div style={{ width: '100%', height: 250 }}>
+                  <Doughnut data={priorityDoughnutData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                  }} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentActivity.length === 0 && (
+                <div className="text-center text-muted-foreground">No recent activity</div>
+              )}
+              {recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    {getActivityIcon(activity.type)}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{activity.title}</p>
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <span>•</span>
+                        <span>{activity.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {activity.priority && (
+                    <Badge variant="secondary" className="bg-red-100 text-red-800">
+                      {activity.priority} priority
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </AdminLayout>
   )
 } 
