@@ -481,7 +481,7 @@ export default function Dashboard() {
                         <div className="space-y-2">
                           <Label htmlFor="address">Address</Label>
                           <div className="flex items-center space-x-2">
-                            <Building className="h-7 w-7 text-muted-foreground" />
+                            <Building className="h-4 w-4 text-muted-foreground" />
                             <Input id="address" name="address" value={editForm.address} onChange={handleEditChange} />
                           </div>
                         </div>

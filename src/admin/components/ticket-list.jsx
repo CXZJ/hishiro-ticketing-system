@@ -39,7 +39,7 @@ function getStatusColor(status) {
   }
 }
 
-export function TicketList({ status, priority, assignee }) {
+export function TicketList({ status, priority, assignee, search }) {
   const [tickets, setTickets] = useState([]);
   const [socket, setSocket] = useState(null);
   const [user, loading] = useAuthState(auth);
@@ -52,7 +52,11 @@ export function TicketList({ status, priority, assignee }) {
         (status === 'open' ? ticket.status === 'new' : ticket.status === status);
       let priorityMatch = priority === 'all' || ticket.priority?.toLowerCase() === priority;
       let assigneeMatch = assignee === 'all' || (assignee === 'unassigned' ? !ticket.assignee : ticket.assignee === assignee);
-      return statusMatch && priorityMatch && assigneeMatch;
+      let searchMatch = !search ||
+        ticket._id?.toLowerCase().includes(search.toLowerCase()) ||
+        ticket.message?.toLowerCase().includes(search.toLowerCase()) ||
+        ticket.userEmail?.toLowerCase().includes(search.toLowerCase());
+      return statusMatch && priorityMatch && assigneeMatch && searchMatch;
     });
   };
 
@@ -121,7 +125,7 @@ export function TicketList({ status, priority, assignee }) {
       newSocket.disconnect();
     };
   // re-run when filters change
-  }, [user, loading, navigate, status, priority, assignee]);
+  }, [user, loading, navigate, status, priority, assignee, search]);
 
   if (loading) {
     // Optionally show a loading indicator while user state is being determined
@@ -141,19 +145,19 @@ export function TicketList({ status, priority, assignee }) {
           {tickets.map((ticket) => (
             <div
               key={ticket._id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-2"
             >
               <div className="flex items-center space-x-4 flex-1">
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium text-sm">#{ticket._id.substring(0, 8)}</span>
+                    <span className="font-medium text-xs sm:text-sm">#{ticket._id.substring(0, 8)}</span>
                     <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
                     <Badge variant="secondary" className={getStatusColor(ticket.status)}>
                       {ticket.status}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold">{ticket.message.substring(0, 50)}...</h3>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                  <h3 className="font-semibold text-sm sm:text-base">{ticket.message.substring(0, 50)}...</h3>
+                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
                     <span>User ID: {ticket.userId}</span>
                     <span>•</span>
                     <div className="flex items-center space-x-1">

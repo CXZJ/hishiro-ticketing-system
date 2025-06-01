@@ -50,42 +50,42 @@ export function TicketStats({ status, priority, assignee }) {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+          <CardTitle className="text-sm font-semibold">Total Tickets</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.total}</div>
-          <p className="text-xs text-muted-foreground">All time tickets</p>
+          <p className="text-xs text-gray-500">All time tickets</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+          <CardTitle className="text-sm font-semibold">Open Tickets</CardTitle>
           <Clock className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.open}</div>
-          <p className="text-xs text-muted-foreground">New tickets</p>
+          <p className="text-xs text-gray-500">New tickets</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+          <CardTitle className="text-sm font-semibold">In Progress</CardTitle>
           <AlertCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.inProgress}</div>
-          <p className="text-xs text-muted-foreground">Active tickets</p>
+          <p className="text-xs text-gray-500">Active tickets</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+          <CardTitle className="text-sm font-semibold">Resolved</CardTitle>
           <CheckCircle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.resolved}</div>
-          <p className="text-xs text-muted-foreground">Completed tickets</p>
+          <p className="text-xs text-gray-500">Completed tickets</p>
         </CardContent>
       </Card>
     </div>

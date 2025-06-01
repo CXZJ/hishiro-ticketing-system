@@ -164,15 +164,15 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex flex-col md:flex-row h-screen bg-background">
       <Sidebar className="border-r" />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-              <p className="text-muted-foreground">Manage your account settings and preferences</p>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Manage your account settings and preferences</p>
             </div>
 
             <Tabs defaultValue="profile" className="space-y-4">
@@ -184,7 +184,7 @@ export default function Settings() {
 
               <TabsContent value="profile" className="space-y-4">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between">
                     <div>
                       <CardTitle>Profile Information</CardTitle>
                       <CardDescription>
@@ -198,7 +198,7 @@ export default function Settings() {
                     )}
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-4 space-y-4 sm:space-y-0">
                       <Avatar className="h-20 w-20">
                         <AvatarImage src={editMode && editForm.photoURL ? editForm.photoURL : (userInfo?.photoURL || `https://ui-avatars.com/api/?name=${user?.email}`)} alt="Admin" />
                         <AvatarFallback>{userInfo?.username?.[0] || user?.email?.[0] || 'A'}</AvatarFallback>
@@ -319,38 +319,38 @@ export default function Settings() {
                     ) : (
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label>Full Name</Label>
+                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Full Name</Label>
                           <div className="flex items-center space-x-2 min-h-[40px]">
                             <User className="h-4 w-4 text-muted-foreground" />
-                            <span>{userInfo?.username || '-'}</span>
+                            <span className="font-medium">{userInfo?.username || '-'}</span>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Email</Label>
+                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Email</Label>
                           <div className="flex items-center space-x-2 min-h-[40px]">
                             <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span>{user?.email || '-'}</span>
+                            <span className="font-medium">{user?.email || '-'}</span>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Phone</Label>
+                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Phone</Label>
                           <div className="flex items-center space-x-2 min-h-[40px]">
                             <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span>{userInfo?.phone || '-'}</span>
+                            <span className="font-medium">{userInfo?.phone || '-'}</span>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Address</Label>
+                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Address</Label>
                           <div className="flex items-center space-x-2 min-h-[40px]">
                             <Building className="h-4 w-4 text-muted-foreground" />
-                            <span>{userInfo?.address || '-'}</span>
+                            <span className="font-medium">{userInfo?.address || '-'}</span>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Gender</Label>
+                          <Label className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs text-gray-400 mb-1 block">Gender</Label>
                           <div className="flex items-center space-x-2 min-h-[40px]">
                             {getGenderIcon(userInfo?.gender)}
-                            <span>{userInfo?.gender || '-'}</span>
+                            <span className="font-medium">{userInfo?.gender || '-'}</span>
                           </div>
                         </div>
                       </div>
