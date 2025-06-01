@@ -340,12 +340,6 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
                   <ChevronDownIcon className="h-5 w-5" />
                 </button>
               )}
-               {/* Link to full page chat */}
-               {!fullPage && currentTicket && (
-                  <Link to={`/chat/${currentTicket._id}`} className="text-white hover:text-gray-200 focus:outline-none ml-2" aria-label="Open full chat page">
-                    <ArrowTopRightOnSquareIcon className="h-5 w-5" />
-                  </Link>
-               )}
             </div>
           )}
 

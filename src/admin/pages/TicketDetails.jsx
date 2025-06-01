@@ -106,7 +106,7 @@ export default function TicketDetails() {
         <Sidebar className="border-r" />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 flex items-center justify-center">
+          <main className="flex-1">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </main>
         </div>
@@ -120,7 +120,7 @@ export default function TicketDetails() {
         <Sidebar className="border-r" />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 flex items-center justify-center">
+          <main className="flex-1">
             <div className="text-center text-red-600">
               <p>Error loading ticket: {error}</p>
               <button
@@ -142,7 +142,7 @@ export default function TicketDetails() {
         <Sidebar className="border-r" />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 flex items-center justify-center">
+          <main className="flex-1">
             <div className="text-center text-gray-600">
               <p>Ticket not found</p>
               <button
@@ -176,8 +176,8 @@ export default function TicketDetails() {
       <Sidebar className="border-r" />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-2xl mx-auto">
+        <main className="flex-1">
+          <div className="w-full px-2 sm:px-4 md:px-8">
             <button
               onClick={() => navigate('/admin/tickets')}
               className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
@@ -186,7 +186,7 @@ export default function TicketDetails() {
               Back to Tickets
             </button>
 
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6 w-full">
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h1 className="text-2xl font-semibold mb-2">#{ticket._id.substring(0, 8)} - {ticket.subject}</h1>
@@ -220,7 +220,7 @@ export default function TicketDetails() {
             </div>
 
             {/* Conversation History */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6 max-h-96 overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6 max-h-96 overflow-y-auto w-full">
               <h2 className="text-lg font-medium mb-4">Conversation</h2>
               {messages.length === 0 ? (
                 <div className="text-gray-500">No messages yet.</div>
@@ -241,7 +241,7 @@ export default function TicketDetails() {
             </div>
 
             {/* Reply Box */}
-            <form onSubmit={handleSend} className="bg-white rounded-lg shadow-sm p-4 flex gap-2 items-end">
+            <form onSubmit={handleSend} className="bg-white rounded-lg shadow-sm p-4 flex gap-2 items-end w-full">
               <textarea
                 className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-black/30 resize-none"
                 rows={2}

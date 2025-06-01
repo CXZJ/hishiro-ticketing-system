@@ -131,14 +131,14 @@ export function Header({ onMenuClick }) {
           {/* Overlay */}
           <div
             className="fixed left-0 right-0 z-50 bg-black/30"
-            style={{ top: '80px', bottom: 0 }}
+            style={{ top: '64px', bottom: 0 }}
             onClick={() => setShowNotificationsPanel(false)}
           />
           {/* Drawer */}
           <div
             className="fixed z-50 right-0 bg-white shadow-2xl flex flex-col overflow-y-auto animate-slide-in-right"
             style={{
-              top: '80px',
+              top: '64px',
               height: 'calc(100vh - 80px)',
               width: '100%',
               maxWidth: '28rem',

@@ -34,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '../components/ui/dropdown-menu';
+import { Select } from "../components/ui/select";
 
 export default function Dashboard() {
   const [user, loading] = useAuthState(auth);
@@ -55,6 +56,17 @@ export default function Dashboard() {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
+  const [showNewTicketForm, setShowNewTicketForm] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    title: '',
+    description: '',
+    category: 'Bug',
+    priority: 'Low',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     if (showNotificationsPanel) {
@@ -79,7 +91,7 @@ export default function Dashboard() {
     const checkAdmin = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5001").replace(/\/+$/, "");
         const url = new URL('/api/admin/check', API_URL).toString();
         const response = await fetch(url, {
           headers: {
@@ -104,10 +116,10 @@ export default function Dashboard() {
     const getToken = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5001").replace(/\/+$/, "");
         
         // Fetch user's tickets
-        const ticketsRes = await fetch(`${API_URL}/api/tickets/user`.replace(/([^:]\/)\/+/g, "$1"), {
+        const ticketsRes = await fetch(`${API_URL}/api/tickets/user`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -125,7 +137,7 @@ export default function Dashboard() {
         setTickets(Array.isArray(ticketsData) ? ticketsData : []);
 
         // Fetch user info
-        const userRes = await fetch(`${API_URL}/api/users/me`.replace(/([^:]\/)\/+/g, "$1"), {
+        const userRes = await fetch(`${API_URL}/api/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -243,7 +255,6 @@ export default function Dashboard() {
     { id: "home", label: "Home", icon: HomeIcon, action: () => { navigate('/'); setShowSidebar(false); } },
     { id: "overview", label: "Overview", icon: UserCircleIcon },
     { id: "tickets", label: "My Tickets", icon: TicketIcon },
-    { id: "chat", label: "Support Chat", icon: ChatBubbleLeftRightIcon },
     { id: "notifications", label: "Notifications", icon: BellIcon },
     { id: "settings", label: "Settings", icon: Cog6ToothIcon },
   ];
@@ -255,11 +266,63 @@ export default function Dashboard() {
     return null;
   };
 
+  const handleNewTicketChange = (e) => {
+    const { name, value } = e.target;
+    setNewTicket((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleNewTicketSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const token = await user.getIdToken();
+      const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5001").replace(/\/+$/, "");
+      const res = await fetch(`${API_URL}/api/tickets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          message: newTicket.description,
+          subject: newTicket.title,
+          category: newTicket.category,
+          priority: newTicket.priority.toLowerCase(),
+          botResponse: "No bot response",
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to create ticket');
+      const created = await res.json();
+      setTickets((prev) => [created, ...prev]);
+      setShowNewTicketForm(false);
+      setNewTicket({ title: '', description: '', category: 'Bug', priority: 'Low' });
+    } catch (err) {
+      alert('Failed to create ticket.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Filtering logic
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch =
+      ticket.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket._id?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPriority =
+      priorityFilter === "all" || ticket.priority === priorityFilter;
+    const matchesStatus =
+      statusFilter === "all" || ticket.status === statusFilter;
+    return matchesSearch && matchesPriority && matchesStatus;
+  });
+
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return (
           <div className="space-y-6">
+            <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">Your Dashboard</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-sm">
                 <div className="flex items-center justify-between">
@@ -301,7 +364,7 @@ export default function Dashboard() {
                     >
                       <div>
                         <p className="font-medium">Ticket #{ticket._id.substring(0, 8)}</p>
-                        <p className="text-sm text-gray-500">{ticket.subject}</p>
+                        <p className="text-sm text-gray-500">{ticket.subject || ticket.message}</p>
                       </div>
                       <span
                         className={`px-3 py-1 rounded-full text-sm ${
@@ -325,69 +388,120 @@ export default function Dashboard() {
       case "tickets":
         return (
           <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold">My Tickets</h3>
-              <button
-                onClick={() => navigate("/chat")}
-                className="bg-black text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-white hover:text-black hover:border hover:border-black transition-all duration-150"
-              >
-                New Ticket
-              </button>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+              <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">{showNewTicketForm ? 'New Ticket' : 'My Tickets'}</div>
+              {!showNewTicketForm && (
+                <Button onClick={() => setShowNewTicketForm(true)} className="bg-black text-white font-semibold px-4 py-2 rounded-lg shadow hover:bg-gray-900 transition-all duration-150">
+                  New Ticket
+                </Button>
+              )}
             </div>
-            {tickets.length > 0 ? (
-              <div className="space-y-4">
-                {tickets.map((ticket) => (
-                  <div
-                    key={ticket._id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div>
-                      <p className="font-medium">Ticket #{ticket._id.substring(0, 8)}</p>
-                      <p className="text-sm text-gray-500">{ticket.subject}</p>
-                      <p className="text-xs text-gray-400">
-                        Created: {new Date(ticket.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${
+            {/* Filters and Search */}
+            {!showNewTicketForm && (
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <input
+                  type="text"
+                  placeholder="Search tickets..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="border rounded-lg px-3 py-2 w-full sm:w-1/3"
+                />
+                <select
+                  value={priorityFilter}
+                  onChange={e => setPriorityFilter(e.target.value)}
+                  className="border rounded-lg px-3 py-2 w-full sm:w-1/6"
+                >
+                  <option value="all">All Priorities</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  className="border rounded-lg px-3 py-2 w-full sm:w-1/6"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="new">New</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+            )}
+            {showNewTicketForm ? (
+              <form onSubmit={handleNewTicketSubmit} className="bg-white rounded-xl shadow p-6 space-y-4 mb-6">
+                <div>
+                  <Label className="block mb-1 font-medium">Issue Title</Label>
+                  <Input name="title" value={newTicket.title} onChange={handleNewTicketChange} required placeholder="Enter issue title" />
+                </div>
+                <div>
+                  <Label className="block mb-1 font-medium">Description of the Problem</Label>
+                  <textarea name="description" value={newTicket.description} onChange={handleNewTicketChange} required className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-black/30 resize-none" rows={3} placeholder="Describe your problem..." />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <Label className="block mb-1 font-medium">Category</Label>
+                    <select name="category" value={newTicket.category} onChange={handleNewTicketChange} className="w-full border rounded-lg px-3 py-2">
+                      <option value="Bug">Bug</option>
+                      <option value="Feature Request">Feature Request</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <Label className="block mb-1 font-medium">Priority</Label>
+                    <select name="priority" value={newTicket.priority} onChange={handleNewTicketChange} className="w-full border rounded-lg px-3 py-2">
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" onClick={() => setShowNewTicketForm(false)} disabled={submitting}>Cancel</Button>
+                  <Button type="submit" className="bg-black text-white" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Ticket'}</Button>
+                </div>
+              </form>
+            ) : (
+              filteredTickets.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredTickets.map((ticket) => (
+                    <div
+                      key={ticket._id}
+                      className="bg-white rounded-xl shadow p-4 flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-lg">{ticket.subject || ticket.message}</div>
+                          <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           ticket.status === "resolved"
                             ? "bg-green-100 text-green-800"
                             : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {ticket.status}
-                      </span>
-                      <button
-                        onClick={() => navigate(`/chat/${ticket._id}`)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        View
-                      </button>
+                        }`}>
+                          {ticket.status}
+                        </span>
+                      </div>
+                      <div className="text-gray-600 text-sm">{ticket.message}</div>
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-xs text-gray-400">
+                          Created: {new Date(ticket.createdAt).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/chat/${ticket._id}`)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          View
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No tickets found</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-4">No tickets found</p>
+              )
             )}
-          </div>
-        );
-
-      case "chat":
-        return (
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Support Chat</h3>
-            <div className="text-center py-8">
-              <ChatBubbleLeftRightIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">Need help? Start a conversation with our support team.</p>
-              <button
-                onClick={() => navigate("/chat")}
-                className="bg-black text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-white hover:text-black hover:border hover:border-black transition-all duration-150"
-              >
-                Start Chat
-              </button>
-            </div>
           </div>
         );
 

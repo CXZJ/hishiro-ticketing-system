@@ -33,7 +33,15 @@ const getTicket = async (req, res) => {
 // @access  Private
 const createTicket = async (req, res) => {
   try {
-    const ticket = await Ticket.create(req.body);
+    const { userId, subject, message, botResponse, category, priority } = req.body;
+    const ticket = await Ticket.create({
+      userId,
+      subject,
+      message,
+      botResponse,
+      category,
+      priority,
+    });
     res.status(201).json(ticket);
   } catch (error) {
     res.status(400).json({ message: error.message });

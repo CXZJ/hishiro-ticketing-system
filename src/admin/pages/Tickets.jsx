@@ -6,12 +6,24 @@ import { Sidebar } from "../components/sidebar"
 import { TicketList } from "../components/ticket-list"
 import { Filters } from "../components/filters"
 import { Input } from "../../components/ui/input"
+import { useLocation } from 'react-router-dom';
+import React from 'react';
 
 export default function Tickets() {
-  const [status, setStatus] = useState('all');
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const initialStatus = query.get('status') || 'all';
+  const initialAssignee = query.get('assignee') || 'all';
+  const [status, setStatus] = useState(initialStatus);
   const [priority, setPriority] = useState('all');
-  const [assignee, setAssignee] = useState('all');
+  const [assignee, setAssignee] = useState(initialAssignee);
   const [search, setSearch] = useState('');
+
+  // Update filters if URL changes
+  React.useEffect(() => {
+    setStatus(query.get('status') || 'all');
+    setAssignee(query.get('assignee') || 'all');
+  }, [location.search]);
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-background">
