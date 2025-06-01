@@ -121,9 +121,26 @@ const generateToken = (id) => {
   });
 };
 
+// @desc    Get all users (admin only)
+// @route   GET /api/users
+// @access  Private/Admin
+const getAllUsers = async (req, res) => {
+  try {
+    // Only allow admin
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized as admin' });
+    }
+    const users = await User.find().sort({ createdAt: -1 });
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch users', error: err.message });
+  }
+};
+
 export {
   loginUser,
   getMe,
   registerFirebaseUser,
   updateMe,
+  getAllUsers,
 };

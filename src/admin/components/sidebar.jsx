@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Link, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Ticket, Users, Settings, BarChart3, MessageSquare, UserCheck, Archive } from 'lucide-react'
+import logo from '../../assets/logo.png';
 
 export function Sidebar({ className }) {
   const location = useLocation()
@@ -24,6 +25,11 @@ export function Sidebar({ className }) {
 
   return (
     <div className={cn("pb-12 w-64", className)}>
+      <div className="flex flex-col items-center py-6">
+        <Link to="/admin">
+          <img src={logo} alt="Logo" className="h-10 mb-4 drop-shadow-xl" />
+        </Link>
+      </div>
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Support Admin</h2>
@@ -86,6 +92,18 @@ export function Sidebar({ className }) {
               >
                 <Archive className="mr-2 h-4 w-4" />
                 Resolved
+              </Button>
+            </Link>
+            <Link to="/admin/users">
+              <Button 
+                variant={isActive('/admin/users') ? "secondary" : "ghost"} 
+                className={cn(
+                  "w-full justify-start transition-colors",
+                  isActive('/admin/users') ? "bg-secondary" : "hover:bg-secondary/50"
+                )}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Users
               </Button>
             </Link>
           </div>

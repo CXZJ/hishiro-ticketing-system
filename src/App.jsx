@@ -29,6 +29,7 @@ import TicketDetails from './admin/pages/TicketDetails'
 import Agents       from './admin/pages/Agents'
 import Analytics    from './admin/pages/Analytics'
 import Settings     from './admin/pages/Settings'
+import Users        from './admin/pages/Users'
 
 function ClientLayout() {
   const { showSearch, setShowSearch } = useSearchContext()
@@ -188,6 +189,11 @@ export default function App() {
             <Route path="/admin/settings" element={
               <ProtectedAdminRoute>
                 <Settings />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedAdminRoute>
+                <Users />
               </ProtectedAdminRoute>
             } />
 

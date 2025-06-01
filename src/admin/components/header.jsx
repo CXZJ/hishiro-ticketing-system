@@ -10,13 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu"
-import { Bell, Search, Shield, Settings, LogOut } from 'lucide-react'
+import { Bell, Search, Shield, Settings, LogOut, Menu } from 'lucide-react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth } from '../../firebase'
 import { signOut } from 'firebase/auth'
 import { toast } from 'react-hot-toast'
 
-export function Header() {
+export function Header({ onMenuClick }) {
   const [user] = useAuthState(auth)
   const navigate = useNavigate()
 
@@ -33,6 +33,13 @@ export function Header() {
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4 gap-4">
+        <button
+          className="md:hidden p-2 rounded hover:bg-gray-200 focus:outline-none"
+          onClick={onMenuClick}
+          aria-label="Open sidebar"
+        >
+          <Menu className="h-6 w-6 text-gray-700" />
+        </button>
         <div className="flex items-center space-x-4 flex-1">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
