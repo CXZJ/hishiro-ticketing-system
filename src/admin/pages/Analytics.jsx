@@ -3,64 +3,24 @@ import { Sidebar } from "../components/sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle, 
+import {
+  BarChart3,
+  TrendingUp,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Users,
   MessageSquare,
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../firebase';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import { Chart, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend } from 'chart.js';
 
-const ticketStats = {
-  total: 1234,
-  open: 89,
-  resolved: 1123,
-  highPriority: 7,
-  avgResponseTime: "2h 15m",
-  avgResolutionTime: "4h 30m",
-  satisfactionRate: 92,
-  monthlyTrend: "+12%",
-  weeklyTrend: "-5%",
-}
-
-const recentActivity = [
-  {
-    id: 1,
-    type: "ticket_resolved",
-    title: "Login issues with mobile app",
-    agent: "Sarah Wilson",
-    time: "2 hours ago",
-    status: "success",
-  },
-  {
-    id: 2,
-    type: "ticket_created",
-    title: "Payment processing error",
-    customer: "Jane Smith",
-    time: "4 hours ago",
-    priority: "high",
-  },
-  {
-    id: 3,
-    type: "ticket_assigned",
-    title: "Feature request: Dark mode",
-    agent: "Mike Johnson",
-    time: "1 day ago",
-    status: "info",
-  },
-  {
-    id: 4,
-    type: "ticket_updated",
-    title: "Account deletion request",
-    agent: "Emily Chen",
-    time: "2 days ago",
-    status: "warning",
-  },
-]
+Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 function getActivityIcon(type) {
   switch (type) {
@@ -78,6 +38,83 @@ function getActivityIcon(type) {
 }
 
 export default function Analytics() {
+  const [tickets, setTickets] = useState([]);
+  const [user] = useAuthState(auth);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchTickets = async () => {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/tickets', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setTickets(await res.json());
+      }
+      setLoading(false);
+    };
+    fetchTickets();
+  }, [user]);
+
+  // Calculate stats
+  const total = tickets.length;
+  const open = tickets.filter(t => t.status === "new" || t.status === "open").length;
+  const resolved = tickets.filter(t => t.status === "resolved").length;
+  const highPriority = tickets.filter(t => t.priority?.toLowerCase() === "high").length;
+  const mediumPriority = tickets.filter(t => t.priority?.toLowerCase() === "medium").length;
+  const lowPriority = tickets.filter(t => t.priority?.toLowerCase() === "low").length;
+
+  // For demo, set these as placeholders
+  const avgResponseTime = "-";
+  const avgResolutionTime = "-";
+  const satisfactionRate = "-";
+  const monthlyTrend = "-";
+  const weeklyTrend = "-";
+
+  // Chart data
+  const statusBarData = {
+    labels: ['Open', 'Resolved'],
+    datasets: [
+      {
+        label: 'Tickets',
+        data: [open, resolved],
+        backgroundColor: [
+          'rgba(59, 130, 246, 0.7)', // blue
+          'rgba(34, 197, 94, 0.7)', // green
+        ],
+        borderRadius: 6,
+      },
+    ],
+  };
+
+  const priorityDoughnutData = {
+    labels: ['High', 'Medium', 'Low'],
+    datasets: [
+      {
+        label: 'Priority',
+        data: [highPriority, mediumPriority, lowPriority],
+        backgroundColor: [
+          'rgba(239, 68, 68, 0.7)', // red
+          'rgba(251, 191, 36, 0.7)', // yellow
+          'rgba(34, 197, 94, 0.7)', // green
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Recent activity: show last 5 tickets
+  const recentActivity = tickets.slice(0, 5).map(t => ({
+    id: t._id,
+    type: t.status === 'resolved' ? 'ticket_resolved' : 'ticket_created',
+    title: t.subject,
+    agent: t.assignedTo || null,
+    customer: t.userId,
+    time: new Date(t.createdAt).toLocaleString(),
+    priority: t.priority,
+  }));
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar className="border-r" />
@@ -97,10 +134,10 @@ export default function Analytics() {
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{ticketStats.total}</div>
+                  <div className="text-2xl font-bold">{total}</div>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <TrendingUp className="mr-1 h-3 w-3" />
-                    <span>{ticketStats.monthlyTrend} from last month</span>
+                    <span>{monthlyTrend} from last month</span>
                   </div>
                 </CardContent>
               </Card>
@@ -110,10 +147,10 @@ export default function Analytics() {
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{ticketStats.open}</div>
+                  <div className="text-2xl font-bold">{open}</div>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <ArrowDownRight className="mr-1 h-3 w-3 text-green-500" />
-                    <span>{ticketStats.weeklyTrend} from last week</span>
+                    <span>{weeklyTrend} from last week</span>
                   </div>
                 </CardContent>
               </Card>
@@ -124,10 +161,10 @@ export default function Analytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {Math.round((ticketStats.resolved / ticketStats.total) * 100)}%
+                    {total > 0 ? Math.round((resolved / total) * 100) : 0}%
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {ticketStats.resolved} tickets resolved
+                    {resolved} tickets resolved
                   </p>
                 </CardContent>
               </Card>
@@ -137,7 +174,7 @@ export default function Analytics() {
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{ticketStats.satisfactionRate}%</div>
+                  <div className="text-2xl font-bold">{satisfactionRate}</div>
                   <p className="text-xs text-muted-foreground">
                     Based on customer feedback
                   </p>
@@ -148,22 +185,17 @@ export default function Analytics() {
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Response Time</CardTitle>
+                  <CardTitle>Ticket Status Overview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Average Response Time</p>
-                        <p className="text-2xl font-bold">{ticketStats.avgResponseTime}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Average Resolution Time</p>
-                        <p className="text-2xl font-bold">{ticketStats.avgResolutionTime}</p>
-                      </div>
-                    </div>
-                    <div className="h-[200px] bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-sm text-muted-foreground">Response time chart will be displayed here</p>
+                  <div className="flex justify-center items-center" style={{ height: 250 }}>
+                    <div style={{ width: 250, height: 250 }}>
+                      <Bar data={statusBarData} options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                      }} />
                     </div>
                   </div>
                 </CardContent>
@@ -171,22 +203,16 @@ export default function Analytics() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Ticket Distribution</CardTitle>
+                  <CardTitle>Priority Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">High Priority</p>
-                        <p className="text-2xl font-bold">{ticketStats.highPriority}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">Open Tickets</p>
-                        <p className="text-2xl font-bold">{ticketStats.open}</p>
-                      </div>
-                    </div>
-                    <div className="h-[200px] bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-sm text-muted-foreground">Ticket distribution chart will be displayed here</p>
+                  <div className="flex justify-center items-center" style={{ height: 250 }}>
+                    <div style={{ width: 250, height: 250 }}>
+                      <Doughnut data={priorityDoughnutData} options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                      }} />
                     </div>
                   </div>
                 </CardContent>
@@ -199,6 +225,9 @@ export default function Analytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {recentActivity.length === 0 && (
+                    <div className="text-center text-muted-foreground">No recent activity</div>
+                  )}
                   {recentActivity.map((activity) => (
                     <div
                       key={activity.id}
