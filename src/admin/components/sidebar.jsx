@@ -120,7 +120,7 @@ export function Sidebar({ className }) {
                 )}
               >
                 <Users className="mr-2 h-4 w-4" />
-                Agents
+                Admins
               </Button>
             </Link>
             <Link to="/admin/analytics">

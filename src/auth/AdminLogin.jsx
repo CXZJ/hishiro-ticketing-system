@@ -1,17 +1,46 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { toast } from 'react-hot-toast';
 import bg from '../assets/background-scaled.png';
 import logo from '../assets/logo.png';
+import { useAuthState } from "react-firebase-hooks/auth";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [user, userLoading] = useAuthState(auth);
+  const [isAdmin, setIsAdmin] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        const token = await user.getIdToken();
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const url = new URL('/api/admin/check', API_URL).toString();
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await response.json();
+        setIsAdmin(data.isAdmin);
+      }
+    };
+    checkAdmin();
+  }, [user]);
+
+  if (user && !userLoading && isAdmin === true) {
+    return <Navigate to="/admin" replace />;
+  }
+  if (user && !userLoading && isAdmin === false) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

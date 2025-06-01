@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate, Link } from "react-router-dom";
 import { auth, logout } from "../firebase";
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import {
   TicketIcon,
   ChatBubbleLeftRightIcon,
@@ -18,6 +19,21 @@ import {
 } from "@heroicons/react/24/outline";
 import logo from "../assets/logo.png";
 import NotificationBell from '../components/NotificationBell';
+import { useNotifications } from '../contexts/NotificationContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Bell, Lock, User, Mail, Phone, Building } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../components/ui/dropdown-menu';
 
 export default function Dashboard() {
   const [user, loading] = useAuthState(auth);
@@ -31,6 +47,25 @@ export default function Dashboard() {
   const [darkMode, setDarkMode] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
+
+  useEffect(() => {
+    if (showNotificationsPanel) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showNotificationsPanel]);
 
   useEffect(() => {
     if (loading) return;
@@ -150,9 +185,23 @@ export default function Dashboard() {
   };
 
   // Handle profile picture upload
-  const handlePhotoChange = e => {
+  const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      alert('Image size should be less than 2MB.');
+      return;
+    }
+    // Optional: compress/resize image here using browser-image-compression
+    // import imageCompression from 'browser-image-compression';
+    // const options = { maxSizeMB: 1, maxWidthOrHeight: 512, useWebWorker: true };
+    // const compressedFile = await imageCompression(file, options);
+    // const fileToRead = compressedFile;
+    // For now, just use the original file:
     const reader = new FileReader();
     reader.onloadend = () => {
       setEditForm(f => ({ ...f, photoURL: reader.result }));
@@ -173,7 +222,11 @@ export default function Dashboard() {
         body: JSON.stringify(editForm)
       });
       if (!res.ok) throw new Error('Failed to update profile');
-      const updated = await res.json();
+      // Re-fetch user info to ensure latest data (especially photoURL)
+      const userRes = await fetch('/api/users/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const updated = await userRes.json();
       setUserInfo(updated);
       setEditMode(false);
     } catch (err) {
@@ -348,109 +401,256 @@ export default function Dashboard() {
 
       case "settings":
         return (
-          <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Account Settings</h3>
-              {!editMode && (
-                <button
-                  onClick={() => setEditMode(true)}
-                  className="text-black font-medium underline underline-offset-4 hover:opacity-70 transition-all duration-150"
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-            <div className="space-y-8">
-              <div className="flex flex-col items-center justify-center space-y-2 mb-4">
-                {editMode ? (
-                  <label htmlFor="profile-pic-upload" className="cursor-pointer group flex flex-col items-center">
-                    <img
-                      src={editForm.photoURL || userInfo?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
-                      alt="Profile"
-                      className="w-20 h-20 rounded-full border-2 border-gray-200 shadow mb-2 object-cover"
-                    />
-                    <span className="text-xs text-gray-500 group-hover:underline">Change Photo</span>
-                    <input
-                      id="profile-pic-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handlePhotoChange}
-                    />
-                  </label>
-                ) : (
-                  <img
-                    src={userInfo?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
-                    alt="Profile"
-                    className="w-20 h-20 rounded-full border-2 border-gray-200 shadow mb-2 object-cover"
-                  />
-                )}
-                <p className="font-semibold text-lg text-gray-900 text-center">{user.displayName || userInfo?.username || "No Name"}</p>
-                <span className="block w-full flex justify-center">
-                  <span className="inline-block max-w-full overflow-x-auto whitespace-nowrap text-xs sm:text-sm text-center" style={{ display: 'block' }}>
-                    {userInfo?.email || user.email}
-                  </span>
-                </span>
-              </div>
-              {editMode ? (
-                <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Username</label>
-                    <input name="username" value={editForm.username} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all duration-150 shadow-sm" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Email</label>
-                    <input value={userInfo?.email || user.email} disabled className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-100" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Gender</label>
-                    <select name="gender" value={editForm.gender} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all duration-150 shadow-sm">
-                      <option value="">-</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Phone</label>
-                    <input name="phone" value={editForm.phone} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all duration-150 shadow-sm" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-gray-400 mb-1 block">Address</label>
-                    <input name="address" value={editForm.address} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all duration-150 shadow-sm" />
-                  </div>
-                  <div className="md:col-span-2 flex gap-3 mt-2">
-                    <button type="submit" disabled={saving} className="bg-black text-white px-6 py-2 rounded-lg font-semibold shadow hover:scale-105 hover:shadow-lg transition-all duration-150 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
-                    <button type="button" onClick={() => { setEditMode(false); setEditForm({ username: userInfo?.username || '', gender: userInfo?.gender || '', phone: userInfo?.phone || '', address: userInfo?.address || '', photoURL: userInfo?.photoURL || '' }); }} className="bg-white text-black border border-black px-6 py-2 rounded-lg font-semibold shadow hover:bg-black hover:text-white hover:scale-105 hover:shadow-lg transition-all duration-150">Cancel</button>
-                  </div>
-                </form>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Username</p>
-                    <p className="font-medium">{userInfo?.username || user.displayName || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Email</p>
-                    <p className="font-medium text-xs sm:text-sm block mt-1 text-left">
-                      {userInfo?.email || user.email}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Gender</p>
-                    <p className="font-medium">{userInfo?.gender || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Phone</p>
-                    <p className="font-medium">{userInfo?.phone || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">Address</p>
-                    <p className="font-medium">{userInfo?.address || "-"}</p>
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Settings</h3>
+            <p className="text-muted-foreground mb-4">Manage your account settings and preferences</p>
+            <Tabs defaultValue="profile" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="security">Security</TabsTrigger>
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              </TabsList>
+              <TabsContent value="profile" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Profile Information</CardTitle>
+                    <CardDescription>
+                      Update your profile information and how others see you on the platform
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center space-x-4">
+                      <Avatar className="h-20 w-20">
+                        <AvatarImage
+                          src={editMode && editForm.photoURL ? editForm.photoURL : (userInfo?.photoURL ? userInfo.photoURL : `https://ui-avatars.com/api/?name=${user.email}`)}
+                          alt="User"
+                        />
+                        <AvatarFallback>{user.displayName?.[0] || userInfo?.username?.[0] || "U"}</AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
+                        {editMode ? (
+                          <Button variant="outline" size="sm" asChild>
+                            <label htmlFor="profile-pic-upload-user" className="cursor-pointer">Change Avatar</label>
+                          </Button>
+                        ) : null}
+                        <input
+                          id="profile-pic-upload-user"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handlePhotoChange}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          JPG, GIF or PNG. Max size of 2MB.
+                        </p>
+                      </div>
+                    </div>
+                    {editMode ? (
+                      <form className="grid gap-4 md:grid-cols-2" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
+                        <div className="space-y-2">
+                          <Label htmlFor="username">Full Name</Label>
+                          <div className="flex items-center space-x-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <Input id="username" name="username" value={editForm.username} onChange={handleEditChange} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <div className="flex items-center space-x-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <Input id="email" type="email" value={userInfo?.email || user.email} disabled />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Phone</Label>
+                          <div className="flex items-center space-x-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <Input id="phone" name="phone" value={editForm.phone} onChange={handleEditChange} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="address">Address</Label>
+                          <div className="flex items-center space-x-2">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <Input id="address" name="address" value={editForm.address} onChange={handleEditChange} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gender">Gender</Label>
+                          <div className="flex items-center space-x-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <select id="gender" name="gender" value={editForm.gender} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                              <option value="">-</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="md:col-span-2 flex justify-end gap-2">
+                          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+                          <Button type="button" variant="outline" onClick={() => { setEditMode(false); setEditForm({ username: userInfo?.username || '', gender: userInfo?.gender || '', phone: userInfo?.phone || '', address: userInfo?.address || '', photoURL: userInfo?.photoURL || '' }); }}>Cancel</Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label className="text-xs text-gray-400 mb-1 block">Full Name</Label>
+                          <div className="font-medium">{userInfo?.username || user.displayName || '-'}</div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400 mb-1 block">Email</Label>
+                          <div className="font-medium">{userInfo?.email || user.email}</div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400 mb-1 block">Phone</Label>
+                          <div className="font-medium">{userInfo?.phone || '-'}</div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400 mb-1 block">Address</Label>
+                          <div className="font-medium">{userInfo?.address || '-'}</div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-400 mb-1 block">Gender</Label>
+                          <div className="font-medium">{userInfo?.gender || '-'}</div>
+                        </div>
+                        <div className="md:col-span-2 flex justify-end">
+                          <Button onClick={() => setEditMode(true)}>Edit</Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="security" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Security Settings</CardTitle>
+                    <CardDescription>
+                      Manage your password and security preferences
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <form
+                      className="space-y-4"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        setPasswordError('');
+                        setPasswordSuccess('');
+                        if (newPassword !== confirmPassword) {
+                          setPasswordError('New passwords do not match.');
+                          return;
+                        }
+                        setPasswordLoading(true);
+                        try {
+                          // Re-authenticate with current password
+                          const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                          await reauthenticateWithCredential(user, credential);
+                          // Now update password
+                          await updatePassword(user, newPassword);
+                          setPasswordSuccess('Password updated successfully!');
+                          setCurrentPassword('');
+                          setNewPassword('');
+                          setConfirmPassword('');
+                        } catch (err) {
+                          setPasswordError(err.message);
+                        } finally {
+                          setPasswordLoading(false);
+                        }
+                      }}
+                    >
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password">Current Password</Label>
+                        <div className="flex items-center space-x-2">
+                          <Lock className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="current-password"
+                            type="password"
+                            value={currentPassword}
+                            onChange={e => setCurrentPassword(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <div className="flex items-center space-x-2">
+                          <Lock className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="new-password"
+                            type="password"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <div className="flex items-center space-x-2">
+                          <Lock className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="confirm-password"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      {passwordError && <div className="text-red-500">{passwordError}</div>}
+                      {passwordSuccess && <div className="text-green-600">{passwordSuccess}</div>}
+                      <div className="flex justify-end">
+                        <Button type="submit" disabled={passwordLoading}>
+                          {passwordLoading ? 'Updating...' : 'Update Password'}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="notifications" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notification Preferences</CardTitle>
+                    <CardDescription>
+                      Configure how you receive notifications
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Email Notifications</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Receive notifications about your account activity
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Bell className="h-4 w-4 text-muted-foreground" />
+                          <Input type="checkbox" className="h-4 w-4" defaultChecked disabled />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Ticket Updates</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Receive notifications about ticket status changes
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Bell className="h-4 w-4 text-muted-foreground" />
+                          <Input type="checkbox" className="h-4 w-4" defaultChecked disabled />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button disabled>Save Preferences</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         );
 
@@ -461,9 +661,10 @@ export default function Dashboard() {
 
   // Debug: log activeTab to ensure it's always a string
   console.log('Sidebar activeTab:', activeTab);
+  console.log('userInfo:', userInfo);
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 flex flex-col font-sans">
+    <div className="dashboard-page min-h-screen w-full bg-gray-50 flex flex-col font-sans">
       {/* Header */}
       <header className="bg-white/70 backdrop-blur-md shadow-xl py-4 px-2 sm:py-6 sm:px-0 rounded-b-2xl border-b border-gray-200 flex items-center relative">
         <div className="max-w-7xl mx-auto flex items-center justify-between w-full relative">
@@ -486,13 +687,37 @@ export default function Dashboard() {
           </div>
           {/* Right: Notification and Welcome */}
           <div className="flex items-center space-x-4">
-            <NotificationBell />
+            {/* Notification Bell triggers right-side panel */}
+            <button
+              onClick={() => setShowNotificationsPanel(true)}
+              className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+            >
+              <Bell className="h-6 w-6 text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
             <div className="flex items-center space-x-3">
-              <img
-                src={userInfo?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`}
-                alt="Profile"
-                className="w-10 h-10 rounded-full border-2 border-gray-200 shadow object-cover"
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <img
+                    src={userInfo?.photoURL ? userInfo.photoURL : `https://ui-avatars.com/api/?name=${user.email}`}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full border-2 border-gray-200 shadow object-cover cursor-pointer"
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setActiveTab('settings')}>
+                    Go to Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => { logout(); navigate('/login'); }} className="text-red-600">
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <p className="font-medium">{user?.displayName || user?.email?.split('@')[0]}</p>
             </div>
           </div>
@@ -588,6 +813,67 @@ export default function Dashboard() {
           </div>
         </section>
       </main>
+
+      {/* Notification Drawer */}
+      {showNotificationsPanel && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed left-0 right-0 z-50 bg-black/30"
+            style={{ top: '90px', bottom: 0 }}
+            onClick={() => setShowNotificationsPanel(false)}
+          />
+          {/* Drawer */}
+          <div
+            className="fixed z-50 right-0 bg-white shadow-2xl flex flex-col overflow-y-auto animate-slide-in-right"
+            style={{
+              top: '90px',
+              height: 'calc(100vh - 64px)',
+              width: '100%',
+              maxWidth: '28rem', // max-w-md
+            }}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Notifications</h3>
+              <button onClick={() => setShowNotificationsPanel(false)} className="text-gray-500 hover:text-black text-2xl">&times;</button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {notifications.length > 0 ? (
+                <>
+                  {unreadCount > 0 && (
+                    <div className="p-4 border-b flex justify-end">
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
+                  )}
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      onClick={() => markAsRead(notification.id)}
+                      className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
+                    >
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">{notification.icon}</div>
+                        <div className="ml-3 flex-1">
+                          <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                          <p className="text-sm text-gray-500">{notification.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">{new Date(notification.timestamp).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="p-8 text-center text-gray-500">No notifications</div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 } 

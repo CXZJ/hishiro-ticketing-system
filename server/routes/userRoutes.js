@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerFirebaseUser, getMe, updateMe, getAllUsers } from '../controllers/userController.js';
+import { registerFirebaseUser, getMe, updateMe, getAllUsers, updateUserById } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -141,5 +141,7 @@ router.patch('/me', protect, updateMe);
 
 // Add admin-protected route to get all users
 router.get('/', protect, getAllUsers);
+
+router.patch('/:id', protect, updateUserById);
 
 export default router;

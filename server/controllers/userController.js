@@ -82,8 +82,8 @@ const getMe = async (req, res) => {
     gender: user.gender,
     phone: user.phone,
     address: user.address,
+    photoURL: user.photoURL,
     isAdmin: user.isAdmin,
-    // add any other fields you want to expose
   });
 };
 
@@ -137,10 +137,41 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+// @desc    Update any user by ID (admin only)
+// @route   PATCH /api/users/:id
+// @access  Private/Admin
+const updateUserById = async (req, res) => {
+  try {
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized as admin' });
+    }
+    const { id } = req.params;
+    // Try to find by _id or uid
+    let user = await User.findById(id);
+    if (!user) {
+      user = await User.findOne({ uid: id });
+    }
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const { username, gender, phone, address, photoURL } = req.body;
+    if (username !== undefined) user.username = username;
+    if (gender !== undefined) user.gender = gender;
+    if (phone !== undefined) user.phone = phone;
+    if (address !== undefined) user.address = address;
+    if (photoURL !== undefined) user.photoURL = photoURL;
+    await user.save();
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update user', error: err.message });
+  }
+};
+
 export {
   loginUser,
   getMe,
   registerFirebaseUser,
   updateMe,
   getAllUsers,
+  updateUserById,
 };

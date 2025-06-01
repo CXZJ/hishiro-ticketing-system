@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { FaApple, FaGoogle } from 'react-icons/fa';
 import { useAuthState } from "react-firebase-hooks/auth";
 import { logInWithEmailAndPassword, signInWithGoogle, auth } from '../firebase';
@@ -11,11 +11,38 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [user, loading, error] = useAuthState(auth);
+  const [isAdmin, setIsAdmin] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   // Get the redirect path from location state, or default to dashboard
   const from = location.state?.from || '/dashboard';
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        const token = await user.getIdToken();
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const url = new URL('/api/admin/check', API_URL).toString();
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await response.json();
+        setIsAdmin(data.isAdmin);
+      }
+    };
+    checkAdmin();
+  }, [user]);
+
+  if (user && !loading && isAdmin === true) {
+    return <Navigate to="/admin" replace />;
+  }
+  if (user && !loading && isAdmin === false) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async e => {
     e.preventDefault();

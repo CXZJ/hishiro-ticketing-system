@@ -6,7 +6,7 @@ import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
 import { Mail, Phone, Clock, CheckCircle, Users, MessageSquare } from 'lucide-react'
 
-const agents = [
+const admins = [
   {
     id: 1,
     name: "Sarah Wilson",
@@ -70,7 +70,7 @@ function getStatusColor(status) {
   }
 }
 
-export default function Agents() {
+export default function Admins() {
   return (
     <div className="flex h-screen bg-background">
       <Sidebar className="border-r" />
@@ -79,29 +79,29 @@ export default function Agents() {
         <main className="flex-1 overflow-y-auto p-6">
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Support Agents</h1>
-              <p className="text-muted-foreground">Manage your support team and their performance</p>
+              <h1 className="text-3xl font-bold tracking-tight">Admins</h1>
+              <p className="text-muted-foreground">Manage your admin team and their performance</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Admins</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{agents.length}</div>
-                  <p className="text-xs text-muted-foreground">Active support team members</p>
+                  <div className="text-2xl font-bold">{admins.length}</div>
+                  <p className="text-xs text-muted-foreground">Active admin team members</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Online Agents</CardTitle>
+                  <CardTitle className="text-sm font-medium">Online Admins</CardTitle>
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {agents.filter(agent => agent.status === "Online").length}
+                    {admins.filter(admin => admin.status === "Online").length}
                   </div>
                   <p className="text-xs text-muted-foreground">Currently available</p>
                 </CardContent>
@@ -113,7 +113,7 @@ export default function Agents() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {agents.reduce((sum, agent) => sum + agent.activeTickets, 0)}
+                    {admins.reduce((sum, admin) => sum + admin.activeTickets, 0)}
                   </div>
                   <p className="text-xs text-muted-foreground">Currently being handled</p>
                 </CardContent>
@@ -132,35 +132,35 @@ export default function Agents() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Agent List</CardTitle>
+                <CardTitle>Admin List</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {agents.map((agent) => (
+                  {admins.map((admin) => (
                     <div
-                      key={agent.id}
+                      key={admin.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={agent.avatar} alt={agent.name} />
-                          <AvatarFallback>{agent.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                          <AvatarImage src={admin.avatar} alt={admin.name} />
+                          <AvatarFallback>{admin.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
-                            <h3 className="font-semibold">{agent.name}</h3>
-                            <Badge variant="secondary" className={getStatusColor(agent.status)}>
-                              {agent.status}
+                            <h3 className="font-semibold">{admin.name}</h3>
+                            <Badge variant="secondary" className={getStatusColor(admin.status)}>
+                              {admin.status}
                             </Badge>
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Mail className="h-3 w-3" />
-                              <span>{agent.email}</span>
+                              <span>{admin.email}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Phone className="h-3 w-3" />
-                              <span>{agent.phone}</span>
+                              <span>{admin.phone}</span>
                             </div>
                           </div>
                         </div>
@@ -169,16 +169,16 @@ export default function Agents() {
                         <div className="text-sm text-muted-foreground">
                           <div className="flex items-center space-x-1">
                             <CheckCircle className="h-3 w-3" />
-                            <span>{agent.ticketsResolved} resolved</span>
+                            <span>{admin.ticketsResolved} resolved</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="h-3 w-3" />
-                            <span>{agent.responseTime} avg. response</span>
+                            <span>{admin.responseTime} avg. response</span>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Badge variant="secondary">
-                            {agent.activeTickets} active tickets
+                            {admin.activeTickets} active tickets
                           </Badge>
                           <Button variant="outline" size="sm">
                             View Details
