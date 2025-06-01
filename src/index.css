@@ -117,9 +117,3 @@ body {
   color: hsl(var(--secondary-foreground));
 }
 
-.dashboard-page {
-  overflow-y: clip;
-  height: 100vh;
-}
-
-

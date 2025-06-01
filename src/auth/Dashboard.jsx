@@ -188,20 +188,16 @@ export default function Dashboard() {
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file.');
+    // Only allow JPG and PNG
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only JPG and PNG images are allowed.');
       return;
     }
     if (file.size > 2 * 1024 * 1024) { // 2MB limit
       alert('Image size should be less than 2MB.');
       return;
     }
-    // Optional: compress/resize image here using browser-image-compression
-    // import imageCompression from 'browser-image-compression';
-    // const options = { maxSizeMB: 1, maxWidthOrHeight: 512, useWebWorker: true };
-    // const compressedFile = await imageCompression(file, options);
-    // const fileToRead = compressedFile;
-    // For now, just use the original file:
     const reader = new FileReader();
     reader.onloadend = () => {
       setEditForm(f => ({ ...f, photoURL: reader.result }));
@@ -251,6 +247,13 @@ export default function Dashboard() {
     { id: "notifications", label: "Notifications", icon: BellIcon },
     { id: "settings", label: "Settings", icon: Cog6ToothIcon },
   ];
+
+  // Helper function to pick gender icon (only male/female)
+  const getGenderIcon = (gender) => {
+    if (gender === 'female') return <span className="text-muted-foreground" style={{fontSize: '1.5rem'}}>&#9792;</span>; // ♀
+    if (gender === 'male') return <span className="text-muted-foreground" style={{fontSize: '1.5rem'}}>&#9794;</span>; // ♂
+    return null;
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -412,11 +415,18 @@ export default function Dashboard() {
               </TabsList>
               <TabsContent value="profile" className="space-y-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Profile Information</CardTitle>
-                    <CardDescription>
-                      Update your profile information and how others see you on the platform
-                    </CardDescription>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Profile Information</CardTitle>
+                      <CardDescription>
+                        Update your profile information
+                      </CardDescription>
+                    </div>
+                    {!editMode && (
+                      <Button onClick={() => setEditMode(true)}>
+                        Edit Profile
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="flex items-center space-x-4">
@@ -441,7 +451,7 @@ export default function Dashboard() {
                           onChange={handlePhotoChange}
                         />
                         <p className="text-sm text-muted-foreground">
-                          JPG, GIF or PNG. Max size of 2MB.
+                          JPG or PNG. Max size of 2MB.
                         </p>
                       </div>
                     </div>
@@ -471,51 +481,68 @@ export default function Dashboard() {
                         <div className="space-y-2">
                           <Label htmlFor="address">Address</Label>
                           <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <Building className="h-7 w-7 text-muted-foreground" />
                             <Input id="address" name="address" value={editForm.address} onChange={handleEditChange} />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="gender">Gender</Label>
                           <div className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <select id="gender" name="gender" value={editForm.gender} onChange={handleEditChange} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                            {getGenderIcon(editForm.gender)}
+                            <select
+                              id="gender"
+                              name="gender"
+                              value={editForm.gender}
+                              onChange={handleEditChange}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                            >
                               <option value="">-</option>
                               <option value="male">Male</option>
                               <option value="female">Female</option>
-                              <option value="other">Other</option>
                             </select>
                           </div>
                         </div>
                         <div className="md:col-span-2 flex justify-end gap-2">
-                          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
                           <Button type="button" variant="outline" onClick={() => { setEditMode(false); setEditForm({ username: userInfo?.username || '', gender: userInfo?.gender || '', phone: userInfo?.phone || '', address: userInfo?.address || '', photoURL: userInfo?.photoURL || '' }); }}>Cancel</Button>
+                          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
                         </div>
                       </form>
                     ) : (
                       <div className="grid gap-4 md:grid-cols-2">
-                        <div>
+                        <div className="space-y-2">
                           <Label className="text-xs text-gray-400 mb-1 block">Full Name</Label>
-                          <div className="font-medium">{userInfo?.username || user.displayName || '-'}</div>
+                          <div className="flex items-center space-x-2 min-h-[40px]">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{userInfo?.username || user.displayName || '-'}</span>
+                          </div>
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label className="text-xs text-gray-400 mb-1 block">Email</Label>
-                          <div className="font-medium">{userInfo?.email || user.email}</div>
+                          <div className="flex items-center space-x-2 min-h-[40px]">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{userInfo?.email || user.email}</span>
+                          </div>
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label className="text-xs text-gray-400 mb-1 block">Phone</Label>
-                          <div className="font-medium">{userInfo?.phone || '-'}</div>
+                          <div className="flex items-center space-x-2 min-h-[40px]">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{userInfo?.phone || '-'}</span>
+                          </div>
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label className="text-xs text-gray-400 mb-1 block">Address</Label>
-                          <div className="font-medium">{userInfo?.address || '-'}</div>
+                          <div className="flex items-center space-x-2 min-h-[40px]">
+                            <Building className="h-8 w-8 text-muted-foreground" />
+                            <span className="font-medium">{userInfo?.address || '-'}</span>
+                          </div>
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label className="text-xs text-gray-400 mb-1 block">Gender</Label>
-                          <div className="font-medium">{userInfo?.gender || '-'}</div>
-                        </div>
-                        <div className="md:col-span-2 flex justify-end">
-                          <Button onClick={() => setEditMode(true)}>Edit</Button>
+                          <div className="flex items-center space-x-2 min-h-[40px]">
+                            {getGenderIcon(userInfo?.gender)}
+                            <span className="font-medium">{userInfo?.gender || '-'}</span>
+                          </div>
                         </div>
                       </div>
                     )}

@@ -55,6 +55,12 @@ export default function ProtectedAdminRoute({ children }) {
     checkAdminStatus();
   }, [user]);
 
+  useEffect(() => {
+    if (!checkingAdmin && !isAdmin && user) {
+      toast.error('Access denied. Admin privileges required.');
+    }
+  }, [checkingAdmin, isAdmin, user]);
+
   if (loading || checkingAdmin) {
     return (
       <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center">
@@ -72,7 +78,6 @@ export default function ProtectedAdminRoute({ children }) {
   }
 
   if (!isAdmin) {
-    toast.error('Access denied. Admin privileges required.');
     return <Navigate to="/admin/login" replace />;
   }
 
