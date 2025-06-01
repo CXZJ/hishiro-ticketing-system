@@ -16,6 +16,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   HomeIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 import logo from "../assets/logo.png";
 import NotificationBell from '../components/NotificationBell';
@@ -360,21 +361,50 @@ export default function Dashboard() {
                   {tickets.slice(0, 5).map((ticket) => (
                     <div
                       key={ticket._id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                      className="bg-white rounded-xl shadow p-4 flex flex-col gap-2"
                     >
-                      <div>
-                        <p className="font-medium">Ticket #{ticket._id.substring(0, 8)}</p>
-                        <p className="text-sm text-gray-500">{ticket.subject || ticket.message}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="mr-2 text-lg">
+                            {ticket.priority === "high"
+                              ? "🔴"
+                              : ticket.priority === "medium"
+                              ? "🟡"
+                              : "🟢"}
+                          </span>
+                          <div>
+                            <div className="font-bold text-lg">{ticket.subject || ticket.message}</div>
+                            <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border-2
+                          ${ticket.status === "resolved"
+                            ? "border-green-500 text-green-700 bg-white"
+                            : ticket.status === "in-progress"
+                            ? "border-blue-500 text-blue-700 bg-white"
+                            : ticket.status === "closed"
+                            ? "border-zinc-400 text-zinc-700 bg-white"
+                            : "border-purple-500 text-purple-700 bg-white" // default for 'new'
+                          }`}>
+                          {ticket.status === "resolved" ? "Resolved"
+                            : ticket.status === "in-progress" ? "In Progress"
+                            : ticket.status === "closed" ? "Closed"
+                            : "New"}
+                        </span>
                       </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm ${
-                          ticket.status === "resolved"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {ticket.status}
-                      </span>
+                      <div className="text-gray-600 text-sm">{ticket.message}</div>
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-xs text-gray-400">
+                          Created: {new Date(ticket.createdAt).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/chat/${ticket._id}`)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <EyeIcon className="h-4 w-4 inline-block" />
+                          View
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -412,9 +442,9 @@ export default function Dashboard() {
                   className="border rounded-lg px-3 py-2 w-full sm:w-1/6"
                 >
                   <option value="all">All Priorities</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="low">🟢 Low</option>
+                  <option value="medium">🟡 Medium</option>
+                  <option value="high">🔴 High</option>
                 </select>
                 <select
                   value={statusFilter}
@@ -471,16 +501,32 @@ export default function Dashboard() {
                       className="bg-white rounded-xl shadow p-4 flex flex-col gap-2"
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-lg">{ticket.subject || ticket.message}</div>
-                          <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="mr-2 text-lg">
+                            {ticket.priority === "high"
+                              ? "🔴"
+                              : ticket.priority === "medium"
+                              ? "🟡"
+                              : "🟢"}
+                          </span>
+                          <div>
+                            <div className="font-bold text-lg">{ticket.subject || ticket.message}</div>
+                            <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+                          </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          ticket.status === "resolved"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}>
-                          {ticket.status}
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border-2
+                          ${ticket.status === "resolved"
+                            ? "border-green-500 text-green-700 bg-white"
+                            : ticket.status === "in-progress"
+                            ? "border-blue-500 text-blue-700 bg-white"
+                            : ticket.status === "closed"
+                            ? "border-zinc-400 text-zinc-700 bg-white"
+                            : "border-purple-500 text-purple-700 bg-white" // default for 'new'
+                          }`}>
+                          {ticket.status === "resolved" ? "Resolved"
+                            : ticket.status === "in-progress" ? "In Progress"
+                            : ticket.status === "closed" ? "Closed"
+                            : "New"}
                         </span>
                       </div>
                       <div className="text-gray-600 text-sm">{ticket.message}</div>
@@ -490,8 +536,9 @@ export default function Dashboard() {
                         </div>
                         <button
                           onClick={() => navigate(`/chat/${ticket._id}`)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
                         >
+                          <EyeIcon className="h-4 w-4 inline-block" />
                           View
                         </button>
                       </div>
@@ -805,7 +852,7 @@ export default function Dashboard() {
   console.log('userInfo:', userInfo);
 
   return (
-    <div className="dashboard-page min-h-screen w-full bg-gray-50 flex flex-col font-sans">
+    <div className="dashboard-page min-h-screen w-full bg-gray-50 flex flex-col font-sans" style={{ minHeight: '100vh', height: 'auto', overflowX: 'hidden' }}>
       {/* Header */}
       <header className="bg-white/70 backdrop-blur-md shadow-xl py-4 px-2 sm:py-6 sm:px-0 rounded-b-2xl border-b border-gray-200 flex items-center relative">
         <div className="max-w-7xl mx-auto flex items-center justify-between w-full relative">
@@ -866,7 +913,7 @@ export default function Dashboard() {
       </header>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 mb-4 sm:mb-8">
+      <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 mb-4 sm:mb-8" style={{ minHeight: 0 }}>
         <div className="flex flex-col sm:flex-row items-center gap-4 py-4 sm:py-6">
           <div className="text-center sm:text-left w-full">
             <div className="mb-2 text-lg font-medium text-gray-700">
@@ -881,7 +928,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col xl:flex-row gap-4 xl:gap-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col xl:flex-row gap-4 xl:gap-8" style={{ minHeight: 0 }}>
         {/* Sidebar for desktop and overlay for mobile */}
         <div>
           {/* Overlay for mobile sidebar */}
@@ -948,7 +995,7 @@ export default function Dashboard() {
         </div>
 
         {/* Content Area with widgets and accent headers */}
-        <section className="flex-1 flex flex-col">
+        <section className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
           <div className="w-full rounded-2xl xl:rounded-3xl bg-white/70 backdrop-blur-md shadow-2xl p-4 sm:p-6 xl:p-8 min-h-[400px] xl:min-h-[500px] border border-gray-200">
             {renderContent()}
           </div>
