@@ -230,10 +230,14 @@ router
 router.post('/:id/messages', protect, async (req, res) => {
   try {
     const ticketId = req.params.id;
-    const { text, status, tempId } = req.body;
+    const { text, status, priority, tempId } = req.body;
     if (!text) return res.status(400).json({ message: 'Message text is required' });
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+
+    // Store original values to check for changes
+    const originalStatus = ticket.status;
+    const originalPriority = ticket.priority;
 
     // Add message to ticket (assuming a messages or notes array exists)
     if (!ticket.messages) ticket.messages = [];
@@ -244,13 +248,27 @@ router.post('/:id/messages', protect, async (req, res) => {
       tempId: tempId || null
     };
     ticket.messages.push(messageObj);
-    if (status) ticket.status = status;
+    
+    // Update status if provided and different
+    const statusChanged = status && status !== originalStatus;
+    if (statusChanged) {
+      ticket.status = status;
+    }
+    
+    // Update priority if provided and different
+    const priorityChanged = priority && priority !== originalPriority;
+    if (priorityChanged) {
+      ticket.priority = priority;
+    }
+    
     await ticket.save();
 
     // Emit real-time update to ticket room
     if (req.app.get('io')) {
       const io = req.app.get('io');
       const ticketRoom = `ticket_${ticketId}`;
+      
+      // Emit message
       io.to(ticketRoom).emit('ticketMessage', {
         ticketId,
         message: text,
@@ -258,6 +276,24 @@ router.post('/:id/messages', protect, async (req, res) => {
         time: messageObj.time,
         tempId: messageObj.tempId
       });
+      
+      // Only emit status update if it actually changed
+      if (statusChanged) {
+        io.to(ticketRoom).emit('ticketStatusUpdated', {
+          ticketId,
+          status,
+          time: new Date().toLocaleString()
+        });
+      }
+      
+      // Only emit priority update if it actually changed
+      if (priorityChanged) {
+        io.to(ticketRoom).emit('ticketPriorityUpdated', {
+          ticketId,
+          priority,
+          time: new Date().toLocaleString()
+        });
+      }
     }
 
     res.json({ ticket, messages: ticket.messages });

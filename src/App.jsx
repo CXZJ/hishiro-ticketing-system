@@ -31,6 +31,7 @@ import Agents       from './admin/pages/Agents'
 import Analytics    from './admin/pages/Analytics'
 import Settings     from './admin/pages/Settings'
 import Users        from './admin/pages/Users'
+import AdminNotifications from './admin/pages/Notifications'
 
 function ClientLayout() {
   const { showSearch, setShowSearch } = useSearchContext()
@@ -195,6 +196,11 @@ export default function App() {
             <Route path="/admin/users" element={
               <ProtectedAdminRoute>
                 <Users />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/notifications" element={
+              <ProtectedAdminRoute>
+                <AdminNotifications />
               </ProtectedAdminRoute>
             } />
 

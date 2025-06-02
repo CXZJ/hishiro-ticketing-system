@@ -136,77 +136,126 @@ io.on('connection', (socket) => {
   // Handle joining ticket room (for admin)
   socket.on('joinTicketRoom', (ticketId) => {
     const ticketRoom = `ticket_${ticketId}`;
-    const ticketInfo = activeTicketRooms.get(ticketId);
+    console.log(`Admin ${socket.id} attempting to join ticket room ${ticketRoom}`);
     
+    // Always allow admins to join ticket rooms
+    socket.join(ticketRoom);
+    console.log(`Admin ${socket.id} joined ticket room ${ticketRoom}`);
+    
+    // Update or create ticket info
+    let ticketInfo = activeTicketRooms.get(ticketId);
     if (ticketInfo) {
-      socket.join(ticketRoom);
       ticketInfo.adminId = socket.id;
       activeTicketRooms.set(ticketId, ticketInfo);
-      console.log('Emitting adminJoined for ticketRoom', ticketRoom, 'ticketId', ticketId, 'adminId', socket.id);
-      // Notify user that admin has joined
-      io.to(ticketRoom).emit('adminJoined', {
-        ticketId,
-        adminId: socket.id,
-        time: new Date().toLocaleTimeString()
-      });
+    } else {
+      // Create new ticket info entry for admin joining first
+      const newTicketInfo = {
+        ticketId: ticketId,
+        userId: null,
+        adminId: socket.id
+      };
+      activeTicketRooms.set(ticketId, newTicketInfo);
+      console.log(`Created new ticket room entry for admin in ${ticketRoom}`);
     }
+    
+    console.log('Emitting adminJoined for ticketRoom', ticketRoom, 'ticketId', ticketId, 'adminId', socket.id);
+    // Notify user that admin has joined
+    io.to(ticketRoom).emit('adminJoined', {
+      ticketId,
+      adminId: socket.id,
+      time: new Date().toLocaleString()
+    });
   });
 
   // Handle user joining ticket room
   socket.on('userJoinTicketRoom', (ticketId) => {
     const ticketRoom = `ticket_${ticketId}`;
-    const ticketInfo = activeTicketRooms.get(ticketId);
-
-    if (ticketInfo && ticketInfo.userId === socket.id) {
-      socket.join(ticketRoom);
-      console.log(`User ${socket.id} joined ticket room ${ticketRoom}`);
-       // Optionally, notify admin that user rejoined or is present
-       // io.to(ticketRoom).emit('userJoined', { ticketId, userId: socket.id, time: new Date().toLocaleTimeString() });
-    } else if (!ticketInfo) {
-        // If ticketInfo doesn't exist, try to find the ticket in the DB and create a room entry
-        Ticket.findById(ticketId).then(ticket => {
-            if (ticket) {
-                const newTicketInfo = {
-                    ticketId: ticket._id.toString(),
-                    userId: socket.id,
-                    adminId: null
-                };
-                activeTicketRooms.set(ticket._id.toString(), newTicketInfo);
-                socket.join(ticketRoom);
-                console.log(`User ${socket.id} joined newly created ticket room entry ${ticketRoom}`);
-            } else {
-                console.log(`Ticket ${ticketId} not found for user to join.`);
-            }
-        }).catch(error => {
-            console.error('Error finding ticket for user join:', error);
-        });
+    console.log(`User ${socket.id} attempting to join ticket room ${ticketRoom}`);
+    
+    // Always allow users to join ticket rooms
+    socket.join(ticketRoom);
+    console.log(`User ${socket.id} joined ticket room ${ticketRoom}`);
+    
+    // Update or create ticket info
+    let ticketInfo = activeTicketRooms.get(ticketId);
+    if (ticketInfo) {
+      // Update existing ticket info if user ID is different
+      if (ticketInfo.userId !== socket.id) {
+        ticketInfo.userId = socket.id;
+        activeTicketRooms.set(ticketId, ticketInfo);
+      }
+    } else {
+      // Create new ticket info entry
+      const newTicketInfo = {
+        ticketId: ticketId,
+        userId: socket.id,
+        adminId: null
+      };
+      activeTicketRooms.set(ticketId, newTicketInfo);
+      console.log(`Created new ticket room entry for ${ticketRoom}`);
     }
+    
+    // Notify room that user has joined
+    socket.to(ticketRoom).emit('userJoined', {
+      ticketId,
+      userId: socket.id,
+      time: new Date().toLocaleString()
+    });
   });
 
   // Handle ticket messages
   socket.on('ticketMessage', async (data) => {
-    const { ticketId, message, isAdmin } = data;
+    const { ticketId, message, isAdmin, sender, tempId } = data;
     const ticketRoom = `ticket_${ticketId}`;
-    const ticketInfo = activeTicketRooms.get(ticketId);
+    
+    console.log(`Processing message for ticket ${ticketId} from ${sender || (isAdmin ? 'admin' : 'user')}`);
+    
+    try {
+      // Find the ticket in database
+      const ticket = await Ticket.findById(ticketId);
+      if (!ticket) {
+        console.error(`Ticket ${ticketId} not found`);
+        return;
+      }
 
-    if (ticketInfo) {
-      // Add message to ticket notes
-      await Ticket.findByIdAndUpdate(ticketId, {
-        $push: {
-          notes: {
-            text: message,
-            createdBy: isAdmin ? 'admin' : 'user'
-          }
-        }
-      });
+      // Add message to ticket messages array
+      if (!ticket.messages) ticket.messages = [];
+      const messageObj = {
+        text: message,
+        sender: sender || (isAdmin ? 'admin' : 'user'),
+        time: new Date(),
+        tempId: tempId || null
+      };
+      ticket.messages.push(messageObj);
+      await ticket.save();
+
+      // Update or ensure room info exists
+      let ticketInfo = activeTicketRooms.get(ticketId);
+      if (!ticketInfo) {
+        ticketInfo = {
+          ticketId: ticketId,
+          userId: isAdmin ? null : socket.id,
+          adminId: isAdmin ? socket.id : null
+        };
+        activeTicketRooms.set(ticketId, ticketInfo);
+        console.log(`Created ticket room info for ${ticketRoom}`);
+      }
+
+      // Ensure sender is in the room
+      socket.join(ticketRoom);
 
       // Broadcast message to room
       io.to(ticketRoom).emit('ticketMessage', {
         ticketId,
         message,
-        sender: isAdmin ? 'admin' : 'user',
-        time: new Date().toLocaleTimeString()
+        sender: sender || (isAdmin ? 'admin' : 'user'),
+        time: messageObj.time.toLocaleString(),
+        tempId: tempId || null
       });
+
+      console.log(`Message broadcasted to room ${ticketRoom}`);
+    } catch (error) {
+      console.error('Error processing ticket message:', error);
     }
   });
 

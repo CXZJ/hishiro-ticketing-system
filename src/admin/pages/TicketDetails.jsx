@@ -80,16 +80,35 @@ export default function TicketDetails() {
   useEffect(() => {
     if (!user) return;
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-    const sock = io(API_URL);
+    const sock = io(API_URL, {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000,
+    });
     socketRef.current = sock;
+    
     sock.on('connect', () => {
+      console.log('Admin socket connected successfully');
       sock.emit('joinTicketRoom', id);
     });
+
+    sock.on('connect_error', (error) => {
+      console.error('Admin socket connection error:', error);
+    });
+
+    sock.on('disconnect', (reason) => {
+      console.log('Admin socket disconnected:', reason);
+    });
+
     sock.on('ticketMessage', (data) => {
       if (data.ticketId === id) {
         setMessages(prev => {
           // Fix deduplication: always check for tempId if present
-          const exists = prev.some(m => (m.tempId && data.tempId && m.tempId === data.tempId) || (!data.tempId && m.text === data.message && m.sender === data.sender && new Date(m.time).getTime() === new Date(data.time).getTime()));
+          const exists = prev.some(m => 
+            (m.tempId && data.tempId && m.tempId === data.tempId) || 
+            (!data.tempId && m.text === data.message && m.sender === data.sender && 
+             Math.abs(new Date(m.time).getTime() - new Date(data.time).getTime()) < 1000)
+          );
           if (exists) return prev;
           return [...prev, {
             text: data.message,
@@ -100,6 +119,56 @@ export default function TicketDetails() {
         });
       }
     });
+
+    // Handle status updates
+    sock.on('ticketStatusUpdated', (data) => {
+      if (data.ticketId === id) {
+        setTicket(prev => ({ ...prev, status: data.status }));
+        setStatus(data.status);
+        
+        // Add system message only if not already present
+        setMessages(prev => {
+          const recentSystemMsg = prev.slice(-3).find(m => 
+            m.sender === 'system' && 
+            m.text && m.text.includes('status updated to') &&
+            Math.abs(new Date(m.time).getTime() - new Date(data.time).getTime()) < 5000
+          );
+          
+          if (recentSystemMsg) return prev; // Don't add duplicate
+          
+          return [...prev, {
+            text: `Ticket status updated to: ${data.status}`,
+            sender: 'system',
+            time: data.time
+          }];
+        });
+      }
+    });
+
+    // Handle priority updates
+    sock.on('ticketPriorityUpdated', (data) => {
+      if (data.ticketId === id) {
+        setTicket(prev => ({ ...prev, priority: data.priority }));
+        
+        // Add system message only if not already present
+        setMessages(prev => {
+          const recentSystemMsg = prev.slice(-3).find(m => 
+            m.sender === 'system' && 
+            m.text && m.text.includes('priority updated to') &&
+            Math.abs(new Date(m.time).getTime() - new Date(data.time).getTime()) < 5000
+          );
+          
+          if (recentSystemMsg) return prev; // Don't add duplicate
+          
+          return [...prev, {
+            text: `Ticket priority updated to: ${data.priority}`,
+            sender: 'system',
+            time: data.time
+          }];
+        });
+      }
+    });
+
     return () => {
       sock.disconnect();
     };
@@ -117,7 +186,11 @@ export default function TicketDetails() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ text: reply, status })
+        body: JSON.stringify({ 
+          text: reply, 
+          status,
+          priority: ticket.priority || 'medium'
+        })
       });
       if (res.ok) {
         setReply('');
@@ -188,13 +261,49 @@ export default function TicketDetails() {
         </button>
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="mb-2 text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{ticket.subject || 'Untitled Ticket'}</h1>
-          <div className="text-sm text-gray-500 mb-4">From: {ticket.userEmail || ticket.userId}</div>
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{ticket.subject || 'Untitled Ticket'}</h1>
+              <div className="text-sm text-gray-500 mb-2">From: {ticket.userEmail || ticket.userId}</div>
+            </div>
+            <div className="flex items-center space-x-3">
+              {/* Priority Badge */}
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${
+                ticket.priority === "high"
+                  ? "border-red-500 text-red-700 bg-red-50"
+                  : ticket.priority === "low"
+                  ? "border-green-500 text-green-700 bg-green-50"
+                  : "border-yellow-500 text-yellow-700 bg-yellow-50" // medium
+              }`}>
+                {ticket.priority === "high" ? "🔴 High Priority"
+                  : ticket.priority === "low" ? "🟢 Low Priority"
+                  : "🟡 Medium Priority"}
+              </span>
+              
+              {/* Status Badge */}
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${
+                ticket.status === "resolved"
+                  ? "border-green-500 text-green-700 bg-white"
+                  : ticket.status === "in-progress"
+                  ? "border-blue-500 text-blue-700 bg-white"
+                  : ticket.status === "closed"
+                  ? "border-zinc-400 text-zinc-700 bg-white"
+                  : "border-purple-500 text-purple-700 bg-white" // default for 'new'
+              }`}>
+                {ticket.status === "resolved" ? "Resolved"
+                  : ticket.status === "in-progress" ? "In Progress"
+                  : ticket.status === "closed" ? "Closed"
+                  : "New"}
+              </span>
+            </div>
+          </div>
           <div className="prose max-w-none mb-4">
             <p className="text-gray-600 whitespace-pre-line">{ticket.message}</p>
           </div>
-          <div className="mt-2 text-xs text-gray-400">Created: {new Date(ticket.createdAt).toLocaleString()}</div>
-          <div className="mt-2 text-xs text-gray-400">Status: {ticket.status}</div>
+          <div className="grid grid-cols-2 gap-4 text-xs text-gray-400">
+            <div>Created: {new Date(ticket.createdAt).toLocaleString()}</div>
+            <div>Last updated: {new Date(ticket.updatedAt || ticket.createdAt).toLocaleString()}</div>
+          </div>
         </div>
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Conversation</h2>
@@ -215,41 +324,116 @@ export default function TicketDetails() {
             </div>
           )}
         </div>
-        <form onSubmit={handleSend} className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Reply to Ticket</h2>
-          <div className="mb-4">
-            <textarea
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
-              rows={4}
-              placeholder="Type your reply here..."
-              value={reply}
-              onChange={e => setReply(e.target.value)}
-              required
-              disabled={sending}
-            />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Admin Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-lg">
+            <h2 className="text-lg font-semibold flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Admin Reply Panel
+            </h2>
+            <p className="text-blue-100 text-sm mt-1">Respond to ticket and manage status & priority</p>
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Status</label>
-            <select
-              className="border rounded px-2 py-1"
-              value={status}
-              onChange={e => setStatus(e.target.value)}
-              disabled={sending}
-            >
-              <option value="new">New</option>
-              <option value="in-progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-            disabled={sending || !reply.trim()}
-          >
-            {sending ? 'Sending...' : 'Submit Reply'}
-          </button>
-        </form>
+
+          <form onSubmit={handleSend} className="p-6">
+            {/* Reply Message */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message Response
+              </label>
+              <textarea
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                rows={4}
+                placeholder="Type your reply to the customer..."
+                value={reply}
+                onChange={e => setReply(e.target.value)}
+                required
+                disabled={sending}
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                {reply.length}/1000 characters
+              </div>
+            </div>
+
+            {/* Status and Priority Grid */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              {/* Status Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ticket Status
+                </label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  disabled={sending}
+                >
+                  <option value="new">New</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+
+              {/* Priority Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Priority Level
+                </label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  value={ticket.priority || 'medium'}
+                  onChange={e => setTicket(prev => ({ ...prev, priority: e.target.value }))}
+                  disabled={sending}
+                >
+                  <option value="low">🟢 Low Priority</option>
+                  <option value="medium">🟡 Medium Priority</option>
+                  <option value="high">🔴 High Priority</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+              <div className="text-sm text-gray-500">
+                Reply will be sent immediately to the customer
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setReply('')}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                  disabled={sending}
+                >
+                  Clear
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center"
+                  disabled={sending || !reply.trim()}
+                >
+                  {sending ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      Send Reply
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </main>
     </AdminLayout>
   );

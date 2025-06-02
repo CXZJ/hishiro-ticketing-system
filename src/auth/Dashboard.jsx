@@ -56,7 +56,7 @@ export default function Dashboard() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, getNotificationIcon } = useNotifications();
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   const [newTicket, setNewTicket] = useState({
@@ -594,12 +594,106 @@ export default function Dashboard() {
 
       case "notifications":
         return (
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Notifications</h3>
-            <div className="text-center py-8">
-              <BellIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">You have no notifications at the moment.</p>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">Notifications</h3>
+                <p className="text-gray-500">Stay updated with your latest activities</p>
+              </div>
+              <div className="flex gap-2">
+                {unreadCount > 0 && (
+                  <Button onClick={markAllAsRead} variant="outline" size="sm">
+                    <CheckCircleIcon className="h-4 w-4 mr-2" />
+                    Mark All Read
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* Stats */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total</CardTitle>
+                  <BellIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{notifications.length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Unread</CardTitle>
+                  <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{unreadCount}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Read</CardTitle>
+                  <CheckCircleIcon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{notifications.length - unreadCount}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Notifications List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Notifications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {notifications.length > 0 ? (
+                  <div className="space-y-4">
+                    {notifications.slice(0, 10).map((notification) => (
+                      <div
+                        key={notification.id}
+                        onClick={() => !notification.read && markAsRead(notification.id)}
+                        className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          !notification.read ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 mt-1">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900 mb-1">
+                                  {notification.title}
+                                </h4>
+                                <p className="text-gray-600 text-sm mb-2">
+                                  {notification.message}
+                                </p>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(notification.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                              {!notification.read && (
+                                <div className="flex-shrink-0">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <BellIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">No notifications yet</h4>
+                    <p className="text-gray-500">We'll notify you when something important happens.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -1085,7 +1179,7 @@ export default function Dashboard() {
                       className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
                     >
                       <div className="flex items-start">
-                        <div className="flex-shrink-0">{notification.icon}</div>
+                        <div className="flex-shrink-0">{getNotificationIcon(notification.type)}</div>
                         <div className="ml-3 flex-1">
                           <p className="text-sm font-medium text-gray-900">{notification.title}</p>
                           <p className="text-sm text-gray-500">{notification.message}</p>

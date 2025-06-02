@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Users, Settings, BarChart3, MessageSquare, Archive, X, LogOut } from 'lucide-react'
+import { LayoutDashboard, Ticket, Users, Settings, BarChart3, MessageSquare, Archive, X, LogOut, Bell } from 'lucide-react'
 import logo from '../../assets/logo.png';
 
 export function Sidebar({ className = '', open = false, onClose }) {
@@ -14,6 +14,7 @@ export function Sidebar({ className = '', open = false, onClose }) {
     { to: '/admin/tickets?status=open', icon: MessageSquare, label: 'Open Tickets' },
     { to: '/admin/tickets?status=resolved', icon: Archive, label: 'Resolved' },
     { to: '/admin/users', icon: Users, label: 'Users' },
+    { to: '/admin/notifications', icon: Bell, label: 'Notifications' },
   ];
   const managementMenu = [
     { to: '/admin/agents', icon: Users, label: 'Admins' },
