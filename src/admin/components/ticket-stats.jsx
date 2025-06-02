@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Clock, CheckCircle, AlertCircle, Users } from 'lucide-react'
+import { Clock, CheckCircle, AlertCircle, Ticket } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
@@ -43,7 +43,7 @@ export function TicketStats({ status, priority, assignee }) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-semibold">Total Tickets</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
+          <Ticket className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.total}</div>

@@ -263,12 +263,13 @@ router.post('/:id/messages', protect, async (req, res) => {
     
     await ticket.save();
 
-    // Emit real-time update to ticket room
+    // Emit real-time update to ticket room and user notification room
     if (req.app.get('io')) {
       const io = req.app.get('io');
       const ticketRoom = `ticket_${ticketId}`;
+      const userNotificationRoom = `user_notifications_${ticket.userId}`;
       
-      // Emit message
+      // Emit message to ticket room
       io.to(ticketRoom).emit('ticketMessage', {
         ticketId,
         message: text,
@@ -276,12 +277,28 @@ router.post('/:id/messages', protect, async (req, res) => {
         time: messageObj.time,
         tempId: messageObj.tempId
       });
+
+      // Send notification to user's notification room (for dashboard notifications)
+      io.to(userNotificationRoom).emit('adminReplyToUserTicket', {
+        ticketId: ticketId,
+        ticketSubject: ticket.subject || 'Your Ticket',
+        message: text,
+        time: new Date().toLocaleString()
+      });
       
       // Only emit status update if it actually changed
       if (statusChanged) {
         io.to(ticketRoom).emit('ticketStatusUpdated', {
           ticketId,
           status,
+          time: new Date().toLocaleString()
+        });
+
+        // Send status notification to user's notification room
+        io.to(userNotificationRoom).emit('userTicketStatusUpdated', {
+          ticketId: ticketId,
+          ticketSubject: ticket.subject || 'Your Ticket',
+          status: status,
           time: new Date().toLocaleString()
         });
       }
@@ -293,7 +310,17 @@ router.post('/:id/messages', protect, async (req, res) => {
           priority,
           time: new Date().toLocaleString()
         });
+
+        // Send priority notification to user's notification room
+        io.to(userNotificationRoom).emit('userTicketPriorityUpdated', {
+          ticketId: ticketId,
+          ticketSubject: ticket.subject || 'Your Ticket',
+          priority: priority,
+          time: new Date().toLocaleString()
+        });
       }
+
+      console.log(`Admin reply and notifications sent for ticket ${ticketId}`);
     }
 
     res.json({ ticket, messages: ticket.messages });

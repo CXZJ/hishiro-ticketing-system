@@ -177,12 +177,11 @@ export default function Settings() {
             <TabsList>
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile" className="space-y-4">
               <Card>
-                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between">
+                <CardHeader className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
                   <div>
                     <CardTitle>Profile Information</CardTitle>
                     <CardDescription>
@@ -190,9 +189,11 @@ export default function Settings() {
                     </CardDescription>
                   </div>
                   {!editMode && (
-                    <Button onClick={() => setEditMode(true)}>
-                      Edit Profile
-                    </Button>
+                    <div className="flex justify-end md:justify-start">
+                      <Button onClick={() => setEditMode(true)}>
+                        Edit Profile
+                      </Button>
+                    </div>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -422,81 +423,6 @@ export default function Settings() {
                       </Button>
                     </div>
                   </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="notifications" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notification Preferences</CardTitle>
-                  <CardDescription>
-                    Configure how you receive notifications
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Email Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receive notifications about your account activity
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Bell className="h-4 w-4 text-muted-foreground" />
-                        <Input type="checkbox" className="h-4 w-4" defaultChecked />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>New Ticket Alerts</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Get notified when new tickets are assigned to you
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Bell className="h-4 w-4 text-muted-foreground" />
-                        <Input type="checkbox" className="h-4 w-4" defaultChecked />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Ticket Updates</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receive notifications about ticket status changes
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Bell className="h-4 w-4 text-muted-foreground" />
-                        <Input type="checkbox" className="h-4 w-4" defaultChecked />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Dark Mode</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Switch between light and dark theme
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Moon className="h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          type="checkbox" 
-                          className="h-4 w-4" 
-                          checked={darkMode}
-                          onChange={(e) => setDarkMode(e.target.checked)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button>Save Preferences</Button>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

@@ -20,13 +20,14 @@ import { createPortal } from 'react-dom'
 import NotificationBell from '../../components/NotificationBell'
 import { useNotifications } from '../../contexts/NotificationContext'
 import logo from '../../assets/logo.png';
+import { io } from 'socket.io-client'
 
 export function Header({ onMenuClick }) {
   const [user] = useAuthState(auth)
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false)
-  const { notifications, unreadCount, markAsRead, markAllAsRead, getNotificationIcon } = useNotifications()
+  const { notifications, unreadCount, markAsRead, markAllAsRead, getNotificationIcon, addNotification } = useNotifications()
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -45,6 +46,90 @@ export function Header({ onMenuClick }) {
     }
     fetchProfile()
   }, [user])
+
+  // Real-time admin notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const socket = io(API_URL, {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000,
+    });
+
+    socket.on('connect', () => {
+      console.log('Admin socket connected');
+      // Join admin notification room
+      socket.emit('adminJoinNotificationRoom', user.uid);
+    });
+
+    // Listen for new tickets created by users
+    socket.on('newTicketCreated', (data) => {
+      addNotification({
+        title: '🎫 New Ticket Created',
+        message: `${data.userName} created a new ${data.priority} priority ticket: "${data.ticketSubject}"`,
+        type: 'ticket',
+        ticketId: data.ticketId,
+        ticketSubject: data.ticketSubject,
+        priority: data.priority
+      });
+
+      // Browser notification for admins
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('🎫 New Support Ticket', {
+          body: `${data.userName} needs help: "${data.ticketSubject}"`,
+          icon: '/favicon.ico',
+          tag: `new-ticket-${data.ticketId}`,
+          requireInteraction: true
+        });
+
+        notification.onclick = () => {
+          window.focus();
+          navigate(`/admin/tickets/${data.ticketId}`);
+          notification.close();
+        };
+      }
+    });
+
+    // Listen for urgent tickets
+    socket.on('urgentTicketAlert', (data) => {
+      addNotification({
+        title: '🚨 Urgent Ticket Alert',
+        message: `High priority ticket from ${data.userName}: "${data.ticketSubject}"`,
+        type: 'alert',
+        ticketId: data.ticketId,
+        ticketSubject: data.ticketSubject
+      });
+
+      // Browser notification for urgent tickets
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('🚨 URGENT: High Priority Ticket', {
+          body: `${data.userName}: "${data.ticketSubject}"`,
+          icon: '/favicon.ico',
+          tag: `urgent-ticket-${data.ticketId}`,
+          requireInteraction: true
+        });
+
+        notification.onclick = () => {
+          window.focus();
+          navigate(`/admin/tickets/${data.ticketId}`);
+          notification.close();
+        };
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user, addNotification, navigate]);
+
+  // Request notification permission for admins
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -185,8 +270,15 @@ export function Header({ onMenuClick }) {
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        onClick={() => markAsRead(notification.id)}
-                        className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}`}
+                        onClick={() => {
+                          markAsRead(notification.id);
+                          // Navigate to ticket if ticketId is available
+                          if (notification.ticketId) {
+                            navigate(`/admin/tickets/${notification.ticketId}`);
+                            setShowNotificationsPanel(false);
+                          }
+                        }}
+                        className={`p-4 border-b hover:bg-gray-50 cursor-pointer transition-all duration-200 ${!notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
                       >
                         <div className="flex items-start">
                           <div className="flex-shrink-0">
@@ -195,7 +287,27 @@ export function Header({ onMenuClick }) {
                           <div className="ml-3 flex-1">
                             <p className="text-sm font-medium text-gray-900">{notification.title}</p>
                             <p className="text-sm text-gray-500">{notification.message}</p>
-                            <p className="text-xs text-gray-400 mt-1">{formatTimeAgo(notification.timestamp)}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-gray-400">{formatTimeAgo(notification.timestamp)}</p>
+                              {notification.ticketSubject && (
+                                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                  {notification.ticketSubject.length > 20 
+                                    ? `${notification.ticketSubject.substring(0, 20)}...` 
+                                    : notification.ticketSubject}
+                                </span>
+                              )}
+                              {notification.priority && (
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                  notification.priority === 'high' 
+                                    ? 'bg-red-100 text-red-700' 
+                                    : notification.priority === 'medium'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-green-100 text-green-700'
+                                }`}>
+                                  {notification.priority}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           {!notification.read && (
                             <div className="flex-shrink-0">
