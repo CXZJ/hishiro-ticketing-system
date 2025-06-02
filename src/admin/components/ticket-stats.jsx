@@ -26,7 +26,7 @@ export function TicketStats({ status, priority, assignee }) {
         const tickets = await res.json();
         const stats = {
           total: tickets.length,
-          open: tickets.filter(t => t.status === 'new').length,
+          open: tickets.filter(t => t.status === 'open').length,
           resolved: tickets.filter(t => t.status === 'resolved').length,
           inProgress: tickets.filter(t => t.status === 'in-progress').length
         };

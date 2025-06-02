@@ -369,10 +369,10 @@ export default function TicketDetails() {
                   onChange={e => setStatus(e.target.value)}
                   disabled={sending}
                 >
-                  <option value="new">New</option>
+                  <option value="open">Open</option>
                   <option value="in-progress">In Progress</option>
+                  <option value="pending">Pending</option>
                   <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
                 </select>
               </div>
 

@@ -26,7 +26,7 @@ function getPriorityColor(priority) {
 
 function getStatusColor(status) {
   switch (status) {
-    case "new":
+    case "open":
       return "bg-blue-100 text-blue-800 hover:bg-blue-200"
     case "in-progress":
       return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
@@ -48,8 +48,7 @@ export function TicketList({ status, priority, assignee, search, limit }) {
   // Helper to filter tickets client-side (if backend doesn't support query params)
   const filterTickets = (tickets) => {
     return tickets.filter(ticket => {
-      let statusMatch = status === 'all' ||
-        (status === 'open' ? ticket.status === 'new' : ticket.status === status);
+      let statusMatch = status === 'all' || ticket.status === status;
       let priorityMatch = priority === 'all' || ticket.priority?.toLowerCase() === priority;
       let searchMatch = !search ||
         ticket._id?.toLowerCase().includes(search.toLowerCase()) ||
@@ -148,21 +147,21 @@ export function TicketList({ status, priority, assignee, search, limit }) {
             else if (ticket.priority?.toLowerCase() === 'medium') priorityEmoji = '🟡';
 
             // Status badge color and emoji
-            let statusColor = 'border-purple-400 text-purple-700';
-            let statusText = 'New';
-            let statusEmoji = '🟣';
+            let statusColor = 'border-blue-400 text-blue-700';
+            let statusText = 'Open';
+            let statusEmoji = '🔵';
             if (ticket.status === 'resolved') {
               statusColor = 'border-green-500 text-green-700';
               statusText = 'Resolved';
               statusEmoji = '🟢';
             } else if (ticket.status === 'in-progress') {
-              statusColor = 'border-blue-500 text-blue-700';
+              statusColor = 'border-yellow-500 text-yellow-700';
               statusText = 'In Progress';
               statusEmoji = '🟡';
-            } else if (ticket.status === 'closed') {
-              statusColor = 'border-zinc-400 text-zinc-700';
-              statusText = 'Closed';
-              statusEmoji = '⚫';
+            } else if (ticket.status === 'pending') {
+              statusColor = 'border-orange-500 text-orange-700';
+              statusText = 'Pending';
+              statusEmoji = '🟠';
             }
 
             return (

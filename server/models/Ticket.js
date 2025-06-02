@@ -20,8 +20,8 @@ const ticketSchema = mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['new', 'in-progress', 'resolved', 'closed'],
-      default: 'new',
+      enum: ['open', 'in-progress', 'pending', 'resolved'],
+      default: 'open',
     },
     priority: {
       type: String,

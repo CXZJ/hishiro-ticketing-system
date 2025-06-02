@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../firebase';
 
 export default function AdminChat() {
   const [message, setMessage] = useState('');
@@ -10,6 +12,7 @@ export default function AdminChat() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const messagesEndRef = useRef(null);
   const { addNotification } = useNotifications();
+  const [user] = useAuthState(auth);
 
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
@@ -60,6 +63,25 @@ export default function AdminChat() {
       }
     });
 
+    // Listen for status updates
+    newSocket.on('ticketStatusUpdated', (data) => {
+      if (selectedTicket && data.ticketId === selectedTicket._id) {
+        setSelectedTicket(prev => ({ ...prev, status: data.status }));
+        setMessages(prev => [...prev, {
+          _id: Math.random().toString(),
+          from: 'system',
+          text: `Ticket status updated to: ${data.status}`,
+          time: data.time
+        }]);
+      }
+      // Update status in active tickets list
+      setActiveTickets(prev => prev.map(ticket => 
+        ticket._id === data.ticketId 
+          ? { ...ticket, status: data.status }
+          : ticket
+      ));
+    });
+
     // Listen for admin joined notification
     newSocket.on('adminJoined', (data) => {
       if (selectedTicket && data.ticketId === selectedTicket._id) {
@@ -107,6 +129,20 @@ export default function AdminChat() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (message.trim() && socket && selectedTicket) {
+      // Check if ticket is resolved
+      if (selectedTicket.status === 'resolved') {
+        addNotification({
+          title: 'Chat Closed',
+          message: 'This ticket has been resolved. No further communication is allowed.',
+          icon: (
+            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )
+        });
+        return;
+      }
+
       // Send message to ticket room
       socket.emit('ticketMessage', {
         ticketId: selectedTicket._id,
@@ -131,12 +167,35 @@ export default function AdminChat() {
     setSelectedTicket(ticket);
   };
 
-  const handleStatusUpdate = (status) => {
+  const handleStatusUpdate = async (status) => {
     if (socket && selectedTicket) {
-      socket.emit('updateTicketStatus', {
-        ticketId: selectedTicket._id,
-        status
-      });
+      try {
+        const token = await user.getIdToken();
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const res = await fetch(`${API_URL}/api/tickets/${selectedTicket._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ status })
+        });
+
+        if (res.ok) {
+          // Emit socket event for real-time update
+          socket.emit('updateTicketStatus', {
+            ticketId: selectedTicket._id,
+            status
+          });
+          
+          // Update local state
+          setSelectedTicket(prev => ({ ...prev, status }));
+        } else {
+          console.error('Failed to update ticket status');
+        }
+      } catch (err) {
+        console.error('Error updating ticket status:', err);
+      }
     }
   };
 
@@ -187,10 +246,10 @@ export default function AdminChat() {
                   onChange={(e) => handleStatusUpdate(e.target.value)}
                   className="border rounded px-2 py-1"
                 >
-                  <option value="new">New</option>
+                  <option value="open">Open</option>
                   <option value="in-progress">In Progress</option>
+                  <option value="pending">Pending</option>
                   <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
                 </select>
               </div>
               
@@ -225,21 +284,27 @@ export default function AdminChat() {
                 )}
               </div>
               
-              <form onSubmit={handleSubmit} className="flex">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type your response..."
-                  className="flex-grow border rounded-l px-3 py-2"
-                />
-                <button 
-                  type="submit" 
-                  className="bg-blue-600 text-white px-4 py-2 rounded-r"
-                >
-                  Send
-                </button>
-              </form>
+              {selectedTicket.status === 'resolved' ? (
+                <div className="bg-red-50 border border-red-200 rounded p-3 text-center text-red-600">
+                  This ticket has been resolved. No further communication is allowed.
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="flex">
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type your response..."
+                    className="flex-grow border rounded-l px-3 py-2"
+                  />
+                  <button 
+                    type="submit" 
+                    className="bg-blue-600 text-white px-4 py-2 rounded-r"
+                  >
+                    Send
+                  </button>
+                </form>
+              )}
             </>
           ) : (
             <div className="flex items-center justify-center h-full">

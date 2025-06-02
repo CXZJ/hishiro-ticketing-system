@@ -39,7 +39,7 @@ export default function TicketChat() {
         }
         const data = await res.json();
         setTicket(data);
-        setStatus(data.status || 'new');
+        setStatus(data.status || 'open');
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -213,6 +213,13 @@ export default function TicketChat() {
     e.preventDefault();
     setSuccess('');
     if (!reply.trim()) return;
+
+    // Check if ticket is resolved
+    if (ticket.status === 'resolved') {
+      setSuccess('This ticket has been resolved. No further communication is allowed.');
+      return;
+    }
+
     setSending(true);
     
     const tempId = Date.now() + '-' + Math.random();
@@ -273,6 +280,12 @@ export default function TicketChat() {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
+    // Check if ticket is resolved
+    if (ticket.status === 'resolved') {
+      setSuccess('This ticket has been resolved. No further communication is allowed.');
+      return;
+    }
+
     const tempId = Date.now() + '-' + Math.random();
     const messageText = newMessage;
     setNewMessage(''); // Clear input immediately for better UX
@@ -315,6 +328,18 @@ export default function TicketChat() {
         time: new Date()
       }]);
     }
+  };
+
+  // Add this function to check if user can send messages
+  const canUserSendMessage = () => {
+    if (ticket.status === 'resolved') return false;
+    
+    // If there are no messages yet, user can send first message
+    if (messages.length === 0) return true;
+    
+    // Check if the last message was from admin
+    const lastMessage = messages[messages.length - 1];
+    return lastMessage.sender === 'admin';
   };
 
   if (loading) {
@@ -392,14 +417,14 @@ export default function TicketChat() {
                   ? "border-green-500 text-green-700 bg-white"
                   : ticket.status === "in-progress"
                   ? "border-blue-500 text-blue-700 bg-white"
-                  : ticket.status === "closed"
-                  ? "border-zinc-400 text-zinc-700 bg-white"
-                  : "border-purple-500 text-purple-700 bg-white" // default for 'new'
+                  : ticket.status === "pending"
+                  ? "border-orange-500 text-orange-700 bg-white"
+                  : "border-blue-500 text-blue-700 bg-white" // default for 'open'
               }`}>
                 {ticket.status === "resolved" ? "Resolved"
                   : ticket.status === "in-progress" ? "In Progress"
-                  : ticket.status === "closed" ? "Closed"
-                  : "New"}
+                  : ticket.status === "pending" ? "Pending"
+                  : "Open"}
               </span>
             </div>
           </div>
@@ -502,106 +527,114 @@ export default function TicketChat() {
               <p className="text-blue-100 text-sm mt-1">Respond to ticket and manage status</p>
             </div>
 
-            <form onSubmit={handleSend} className="p-6">
-              {/* Reply Message */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message Response
-                </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
-                  rows={4}
-                  placeholder="Type your reply to the customer..."
-                  value={reply}
-                  onChange={e => setReply(e.target.value)}
-                  required
-                  disabled={sending}
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {reply.length}/1000 characters
+            {ticket.status === 'resolved' ? (
+              <div className="p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center text-red-600">
+                  This ticket has been resolved. No further communication is allowed.
                 </div>
               </div>
-
-              {/* Status and Priority Grid */}
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                {/* Status Selection */}
-                <div>
+            ) : (
+              <form onSubmit={handleSend} className="p-6">
+                {/* Reply Message */}
+                <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ticket Status
+                    Message Response
                   </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    value={status}
-                    onChange={e => setStatus(e.target.value)}
+                  <textarea
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                    rows={4}
+                    placeholder="Type your reply to the customer..."
+                    value={reply}
+                    onChange={e => setReply(e.target.value)}
+                    required
                     disabled={sending}
-                  >
-                    <option value="new">New</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
-                  </select>
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {reply.length}/1000 characters
+                  </div>
                 </div>
 
-                {/* Priority Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Priority Level
-                  </label>
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    value={ticket.priority || 'medium'}
-                    onChange={e => setTicket(prev => ({ ...prev, priority: e.target.value }))}
-                    disabled={sending}
-                  >
-                    <option value="low">🟢 Low Priority</option>
-                    <option value="medium">🟡 Medium Priority</option>
-                    <option value="high">🔴 High Priority</option>
-                  </select>
-                </div>
-              </div>
+                {/* Status and Priority Grid */}
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  {/* Status Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ticket Status
+                    </label>
+                    <select
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      value={status}
+                      onChange={e => setStatus(e.target.value)}
+                      disabled={sending}
+                    >
+                      <option value="open">Open</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="pending">Pending</option>
+                      <option value="resolved">Resolved</option>
+                    </select>
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-500">
-                  Reply will be sent immediately to the customer
+                  {/* Priority Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Priority Level
+                    </label>
+                    <select
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      value={ticket.priority || 'medium'}
+                      onChange={e => setTicket(prev => ({ ...prev, priority: e.target.value }))}
+                      disabled={sending}
+                    >
+                      <option value="low">🟢 Low Priority</option>
+                      <option value="medium">🟡 Medium Priority</option>
+                      <option value="high">🔴 High Priority</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="flex space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReply('');
-                      setSuccess('');
-                    }}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                    disabled={sending}
-                  >
-                    Clear
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center"
-                    disabled={sending || !reply.trim()}
-                  >
-                    {sending ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                        Send Reply
-                      </>
-                    )}
-                  </button>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-500">
+                    Reply will be sent immediately to the customer
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReply('');
+                        setSuccess('');
+                      }}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                      disabled={sending}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center"
+                      disabled={sending || !reply.trim()}
+                    >
+                      {sending ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                          Send Reply
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </form>
+              </form>
+            )}
           </div>
         )}
 
@@ -619,51 +652,65 @@ export default function TicketChat() {
               <p className="text-sm text-gray-600 mt-1">Continue the conversation with our support team</p>
             </div>
 
-            <div className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="relative">
-                  <textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message here..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
-                    rows={3}
-                    maxLength={1000}
-                  />
-                  <div className="absolute bottom-3 right-3 text-xs text-gray-400">
-                    {newMessage.length}/1000
-                  </div>
+            {ticket.status === 'resolved' ? (
+              <div className="p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center text-red-600">
+                  This ticket has been resolved. No further communication is allowed.
                 </div>
+              </div>
+            ) : !canUserSendMessage() ? (
+              <div className="p-6">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center text-yellow-600">
+                  Please wait for an admin to respond before sending another message.
+                </div>
+              </div>
+            ) : (
+              <div className="p-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="relative">
+                    <textarea
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type your message here..."
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
+                      rows={3}
+                      maxLength={1000}
+                    />
+                    <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                      {newMessage.length}/1000
+                    </div>
+                  </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500 flex items-center">
-                    <svg className="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Messages are sent in real-time
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => setNewMessage('')}
-                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                    >
-                      Clear
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!newMessage.trim()}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center font-medium"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500 flex items-center">
+                      <svg className="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                       </svg>
-                      Send Message
-                    </button>
+                      Messages are sent in real-time
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => setNewMessage('')}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!newMessage.trim()}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center font-medium"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Send Message
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </form>
-            </div>
+                </form>
+              </div>
+            )}
           </div>
         )}
       </div>

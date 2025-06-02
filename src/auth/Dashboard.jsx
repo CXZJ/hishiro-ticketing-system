@@ -478,10 +478,10 @@ export default function Dashboard() {
                   className="border rounded-lg px-3 py-2 w-full sm:w-1/6"
                 >
                   <option value="all">All Statuses</option>
-                  <option value="new">New</option>
+                  <option value="open">Open</option>
                   <option value="in-progress">In Progress</option>
+                  <option value="pending">Pending</option>
                   <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
                 </select>
               </div>
             )}
@@ -559,14 +559,14 @@ export default function Dashboard() {
                             ? "border-green-500 text-green-700 bg-white"
                             : ticket.status === "in-progress"
                             ? "border-blue-500 text-blue-700 bg-white"
-                            : ticket.status === "closed"
-                            ? "border-zinc-400 text-zinc-700 bg-white"
-                            : "border-purple-500 text-purple-700 bg-white" // default for 'new'
+                            : ticket.status === "pending"
+                            ? "border-orange-500 text-orange-700 bg-white"
+                            : "border-blue-500 text-blue-700 bg-white" // default for 'open'
                           }`}>
                           {ticket.status === "resolved" ? "Resolved"
                             : ticket.status === "in-progress" ? "In Progress"
-                            : ticket.status === "closed" ? "Closed"
-                            : "New"}
+                            : ticket.status === "pending" ? "Pending"
+                            : "Open"}
                         </span>
                       </div>
                       <div className="text-gray-600 text-sm">{ticket.message}</div>
