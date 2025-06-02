@@ -48,38 +48,13 @@ export default function SignUp() {
       const user = await registerWithEmailAndPassword(form.email, form.password);
 
       await updateProfile(user, { displayName: form.username });
-
-      // Send user profile to backend
-      const response = await fetch('http://localhost:5001/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: user.uid,
-          email: form.email,
-          username: form.username,
-          gender: form.gender,
-          phone: form.phone,
-          address: form.address,
-          authProvider: "local"
-        })
-      });
-
-      console.log('Response status:', response.status);
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
-
-      if (!response.ok) {
-        throw new Error(responseData.message || 'Failed to register user');
-      }
-
-      console.log('User registered successfully:', responseData);
-      navigate('/login');
-    } catch (err) {
-      setApiError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      navigate('/verify-email', { state: { ...form } }); // Send form data to /verify-email
+  } catch (err) {
+    setApiError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div
