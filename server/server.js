@@ -18,6 +18,19 @@ import './config/firebase-admin.js'; // Import Firebase Admin configuration
 // Load environment variables
 dotenv.config();
 
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  console.error('Stack trace:', error.stack);
+  // Don't exit the process, just log the error
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Stack trace:', reason?.stack);
+  // Don't exit the process, just log the error
+});
+
 // Connect to database
 connectDB();
 
@@ -406,15 +419,4 @@ server.listen(PORT, () => {
   console.log('- POST /api/admin/remove-admin/:uid');
 });
 
-// MongoDB connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/hishiro-ticketing-system';
-
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('MongoDB connected'))
-.catch((err) => {
-  console.error('MongoDB connection error:', err);
-  process.exit(1);
-});
+// MongoDB connection is handled by connectDB() function imported above

@@ -9,6 +9,13 @@ const protect = async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     try {
+      // Check if Firebase Admin is properly initialized
+      if (!admin.apps.length) {
+        console.error('Firebase Admin not initialized');
+        res.status(500).json({ message: 'Authentication service unavailable', error: 'FIREBASE_NOT_INITIALIZED' });
+        return;
+      }
+
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
       console.log('Received token:', token.substring(0, 50) + '...');
