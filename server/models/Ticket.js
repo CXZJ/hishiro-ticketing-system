@@ -32,6 +32,11 @@ const ticketSchema = mongoose.Schema(
       type: String,
       default: null,
     },
+    messages: [{
+      text: String,
+      sender: String, // 'admin' or 'user'
+      time: { type: Date, default: Date.now }
+    }],
     notes: [{
       text: String,
       createdAt: {

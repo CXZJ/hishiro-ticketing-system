@@ -39,7 +39,7 @@ function getStatusColor(status) {
   }
 }
 
-export function TicketList({ status, priority, assignee, search }) {
+export function TicketList({ status, priority, assignee, search, limit }) {
   const [tickets, setTickets] = useState([]);
   const [socket, setSocket] = useState(null);
   const [user, loading] = useAuthState(auth);
@@ -137,44 +137,71 @@ export function TicketList({ status, priority, assignee, search }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Tickets</CardTitle>
+        <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {tickets.map((ticket) => (
-            <div
-              key={ticket._id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors gap-2 w-full"
-            >
-              <div className="flex items-center space-x-4 flex-1">
-                <div className="flex flex-col space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-xs sm:text-sm">#{ticket._id.substring(0, 8)}</span>
-                    <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
-                    <Badge variant="secondary" className={getStatusColor(ticket.status)}>
-                      {ticket.status}
-                    </Badge>
-                  </div>
-                  <h3 className="font-semibold text-sm sm:text-base">{ticket.subject}</h3>
-                  <div className="flex flex-wrap items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
-                    <span>User ID: {ticket.userId}</span>
-                    <span>•</span>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{new Date(ticket.createdAt).toLocaleString()}</span>
-                    </div>
+          {(limit ? tickets.slice(0, limit) : tickets).map((ticket) => {
+            // Priority emoji
+            let priorityEmoji = '🟢';
+            if (ticket.priority?.toLowerCase() === 'high' || ticket.priority === 'Critical') priorityEmoji = '🔴';
+            else if (ticket.priority?.toLowerCase() === 'medium') priorityEmoji = '🟡';
+
+            // Status badge color and emoji
+            let statusColor = 'border-purple-400 text-purple-700';
+            let statusText = 'New';
+            let statusEmoji = '🟣';
+            if (ticket.status === 'resolved') {
+              statusColor = 'border-green-500 text-green-700';
+              statusText = 'Resolved';
+              statusEmoji = '🟢';
+            } else if (ticket.status === 'in-progress') {
+              statusColor = 'border-blue-500 text-blue-700';
+              statusText = 'In Progress';
+              statusEmoji = '🟡';
+            } else if (ticket.status === 'closed') {
+              statusColor = 'border-zinc-400 text-zinc-700';
+              statusText = 'Closed';
+              statusEmoji = '⚫';
+            }
+
+            return (
+              <div
+                key={ticket._id}
+                className="bg-white border border-zinc-100 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm"
+              >
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <span className="text-xl mt-1">{priorityEmoji}</span>
+                  <div className="min-w-0">
+                    <div className="font-bold text-base sm:text-lg truncate">{ticket.subject || ticket.message}</div>
+                    <div className="text-xs text-gray-400 truncate">Ticket #{ticket._id.substring(0, 8)}</div>
+                    {ticket.userEmail && (
+                      <div className="text-xs text-gray-500 truncate">User: {ticket.userEmail}</div>
+                    )}
+                    {!ticket.userEmail && ticket.userId && (
+                      <div className="text-xs text-gray-500 truncate">User ID: {ticket.userId}</div>
+                    )}
+                    <div className="text-gray-600 text-sm whitespace-pre-line">{ticket.message}</div>
+                    <div className="text-xs text-gray-400 mt-1">Created: {new Date(ticket.createdAt).toLocaleDateString()}</div>
                   </div>
                 </div>
+                <div className="flex flex-col items-end gap-2 min-w-fit sm:ml-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${statusColor} bg-white mb-1 flex items-center gap-1`}>
+                    <span>{statusEmoji}</span>
+                    {statusText}
+                  </span>
+                  <button
+                    onClick={() => navigate(`/chat/${ticket._id}`)}
+                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 p-0 h-7 text-sm font-medium"
+                  >
+                    <Eye className="h-4 w-4 inline-block" />
+                    View
+                  </button>
+                </div>
               </div>
-              <Link to={`/admin/tickets/${ticket._id}`}>
-                <Button variant="ghost" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
-                  View
-                </Button>
-              </Link>
-            </div>
-          ))}
-          {tickets.length === 0 && ( // Also handles cases where tickets is not an array initially
+            );
+          })}
+          {tickets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No tickets found
             </div>

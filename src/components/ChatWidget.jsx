@@ -95,6 +95,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
 
       // Handle admin joining
       sock.on("adminJoined", (data) => {
+        console.log("adminJoined event received in ChatWidget", data);
         setIsAdminPresent(true);
         // Only show admin joined message on the full page
         if (fullPage) {
@@ -166,8 +167,8 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
       
       // If on the full page and have a ticketId, the user should join the room
       if (fullPage && ticketId) {
-        socketRef.current.emit('userJoinTicketRoom', ticketId);
         console.log('Emitting userJoinTicketRoom for ticket:', ticketId);
+        socketRef.current.emit('userJoinTicketRoom', ticketId);
       } else if (currentTicket && socketRef.current) {
            // Existing logic for admin/system joining, if applicable
           socketRef.current.emit('joinTicketRoom', ticketToJoin); // Keep existing for admin/system
@@ -203,8 +204,8 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
         isAdmin: false,
         sender: 'user'
       });
-    } else {
-      // If not in a full ticket page or no ticket yet, process with bot or create ticket
+    } else if (!fullPage) {
+      // Only process with bot if not in full page mode (ticket view)
       setIsTyping(true);
       try {
         const response = await generateBotResponse([...messages, { from: "user", type: "text", text: txt }]);

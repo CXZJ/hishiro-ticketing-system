@@ -13,6 +13,7 @@ import ProductList  from './components/ProductList'
 import Footer       from './components/Footer'
 import ChatWidget   from './components/ChatWidget'
 import SearchOverlay from './components/SearchOverlay'
+import TicketChat   from './components/TicketChat'
 
 // auth
 import Login        from './auth/Login'
@@ -196,6 +197,9 @@ export default function App() {
                 <Users />
               </ProtectedAdminRoute>
             } />
+
+            {/* Chat */}
+            <Route path="/chat/:ticketId" element={<TicketChat />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

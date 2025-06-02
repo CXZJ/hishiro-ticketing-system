@@ -93,6 +93,7 @@ export default function AdminChat() {
   // Join ticket room when selected
   useEffect(() => {
     if (selectedTicket && socket) {
+      console.log('Admin joining room', selectedTicket._id);
       socket.emit('joinTicketRoom', selectedTicket._id);
       setMessages([]); // Clear messages when switching tickets
     }
