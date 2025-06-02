@@ -32,25 +32,29 @@ export default function Tickets() {
             <p className="text-muted-foreground text-sm sm:text-base">Manage and track support tickets</p>
           </div>
           <div className="space-y-4">
-            <Input
-              placeholder="Search tickets..."
-              className="mb-2"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            <Filters
-              status={status}
-              setStatus={setStatus}
-              priority={priority}
-              setPriority={setPriority}
-              assignee={assignee}
-              setAssignee={setAssignee}
-              onClear={() => {
-                setStatus('all');
-                setPriority('all');
-                setAssignee('all');
-              }}
-            />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+              <Input
+                placeholder="Search tickets..."
+                className="mb-2 max-w-xs sm:mb-0"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <div className="flex-1">
+                <Filters
+                  status={status}
+                  setStatus={setStatus}
+                  priority={priority}
+                  setPriority={setPriority}
+                  assignee={assignee}
+                  setAssignee={setAssignee}
+                  onClear={() => {
+                    setStatus('all');
+                    setPriority('all');
+                    setAssignee('all');
+                  }}
+                />
+              </div>
+            </div>
             <TicketList status={status} priority={priority} assignee={assignee} search={search} />
           </div>
         </div>

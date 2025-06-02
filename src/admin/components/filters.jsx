@@ -31,9 +31,9 @@ export function Filters({ status, setStatus, priority, setPriority, onClear }) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Priority</SelectItem>
-          <SelectItem value="high">High</SelectItem>
-          <SelectItem value="medium">Medium</SelectItem>
-          <SelectItem value="low">Low</SelectItem>
+          <SelectItem value="high">🔴 High</SelectItem>
+          <SelectItem value="medium">🟡 Medium</SelectItem>
+          <SelectItem value="low">🟢 Low</SelectItem>
         </SelectContent>
       </Select>
 
@@ -46,7 +46,7 @@ export function Filters({ status, setStatus, priority, setPriority, onClear }) {
         )}
         {priority !== 'all' && (
           <Badge variant="secondary" className="flex items-center space-x-1">
-            <span>Priority: {priority.charAt(0).toUpperCase() + priority.slice(1)}</span>
+            <span>Priority: {priority === 'high' ? '🔴 High' : priority === 'medium' ? '🟡 Medium' : priority === 'low' ? '🟢 Low' : priority}</span>
             <X className="h-3 w-3 cursor-pointer" onClick={() => setPriority('all')} />
           </Badge>
         )}

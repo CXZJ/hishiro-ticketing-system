@@ -1,7 +1,7 @@
 import AdminLayout from '../AdminLayout';
 import { TicketStats } from "../components/ticket-stats"
 import { TicketList } from "../components/ticket-list"
-import { Filters } from "../components/filters"
+// import { Filters } from "../components/filters" // Remove filter import
 import { useState } from 'react';
 
 export default function Dashboard() {
@@ -19,17 +19,8 @@ export default function Dashboard() {
             </div>
             <TicketStats status={status} priority={priority}/>
             <div className="space-y-4">
-              <Filters
-                status={status}
-                setStatus={setStatus}
-                priority={priority}
-                setPriority={setPriority}
-                onClear={() => {
-                  setStatus('all');
-                  setPriority('all');
-                }}
-              />
-              <TicketList status={status} priority={priority} />
+              {/* Filters removed from dashboard */}
+              <TicketList status={status} priority={priority} limit={5} />
             </div>
           </div>
         </div>

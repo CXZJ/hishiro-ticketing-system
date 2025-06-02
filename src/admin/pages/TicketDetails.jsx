@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
+import { io } from 'socket.io-client';
 
 export default function TicketDetails() {
   const { id } = useParams();
@@ -17,10 +18,12 @@ export default function TicketDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user] = useAuthState(auth);
-  const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState('');
+  const [status, setStatus] = useState('');
   const [sending, setSending] = useState(false);
+  const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +41,7 @@ export default function TicketDetails() {
         }
         const data = await res.json();
         setTicket(data);
+        setStatus(data.status || 'new');
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -72,6 +76,35 @@ export default function TicketDetails() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Real-time updates with Socket.IO
+  useEffect(() => {
+    if (!user) return;
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const sock = io(API_URL);
+    socketRef.current = sock;
+    sock.on('connect', () => {
+      sock.emit('joinTicketRoom', id);
+    });
+    sock.on('ticketMessage', (data) => {
+      if (data.ticketId === id) {
+        setMessages(prev => {
+          // Fix deduplication: always check for tempId if present
+          const exists = prev.some(m => (m.tempId && data.tempId && m.tempId === data.tempId) || (!data.tempId && m.text === data.message && m.sender === data.sender && new Date(m.time).getTime() === new Date(data.time).getTime()));
+          if (exists) return prev;
+          return [...prev, {
+            text: data.message,
+            sender: data.sender,
+            time: data.time,
+            tempId: data.tempId
+          }];
+        });
+      }
+    });
+    return () => {
+      sock.disconnect();
+    };
+  }, [id, user]);
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!reply.trim()) return;
@@ -84,13 +117,14 @@ export default function TicketDetails() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ text: reply })
+        body: JSON.stringify({ text: reply, status })
       });
       if (res.ok) {
         setReply('');
-        // Refresh messages
+        // Refresh messages and ticket status
         const data = await res.json();
-        setMessages(data);
+        setMessages(data.messages || []);
+        setTicket(data.ticket || ticket);
       }
     } catch (err) {
       // Optionally handle error
@@ -113,15 +147,7 @@ export default function TicketDetails() {
     return (
       <AdminLayout>
         <main className="flex-1">
-          <div className="text-center text-red-600">
-            <p>Error loading ticket: {error}</p>
-            <button
-              onClick={() => navigate('/admin/tickets')}
-              className="mt-4 text-blue-600 hover:text-blue-800"
-            >
-              Back to Tickets
-            </button>
-          </div>
+          <div className="bg-red-100 text-red-800 p-4 rounded-lg">Error: {error}</div>
         </main>
       </AdminLayout>
     );
@@ -131,15 +157,7 @@ export default function TicketDetails() {
     return (
       <AdminLayout>
         <main className="flex-1">
-          <div className="text-center text-gray-600">
-            <p>Ticket not found</p>
-            <button
-              onClick={() => navigate('/admin/tickets')}
-              className="mt-4 text-blue-600 hover:text-blue-800"
-            >
-              Back to Tickets
-            </button>
-          </div>
+          <div className="bg-yellow-100 text-yellow-800 p-4 rounded-lg">Ticket not found</div>
         </main>
       </AdminLayout>
     );
@@ -160,89 +178,78 @@ export default function TicketDetails() {
 
   return (
     <AdminLayout>
-      <main className="flex-1">
-        <div className="w-full px-2 sm:px-4 md:px-8">
-          <button
-            onClick={() => navigate('/admin/tickets')}
-            className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
-          >
-            <ArrowLeftIcon className="w-5 h-5 mr-2" />
-            Back to Tickets
-          </button>
-
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 w-full">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h1 className="text-2xl font-semibold mb-2">#{ticket._id.substring(0, 8)} - {ticket.subject}</h1>
-                <div className="flex items-center text-gray-600">
-                  <span className="mr-4">User ID: {ticket.userId}</span>
-                  <span>{new Date(ticket.createdAt).toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(ticket.status)}
-                <span className="font-medium">{ticket.status}</span>
-              </div>
-            </div>
-
-            <div className="border-t pt-6">
-              <h2 className="text-lg font-medium mb-4">Description</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{ticket.message}</p>
-            </div>
-
-            {ticket.priority && (
-              <div className="mt-6">
-                <h2 className="text-lg font-medium mb-4">Priority</h2>
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium
-                  ${ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
-                    ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'}`}>
-                  {ticket.priority} Priority
-                </span>
-              </div>
-            )}
+      <main className="flex-1 max-w-3xl mx-auto py-8 px-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
+        >
+          <ArrowLeftIcon className="h-5 w-5 mr-2" />
+          Back
+        </button>
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="mb-2 text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{ticket.subject || 'Untitled Ticket'}</h1>
+          <div className="text-sm text-gray-500 mb-4">From: {ticket.userEmail || ticket.userId}</div>
+          <div className="prose max-w-none mb-4">
+            <p className="text-gray-600 whitespace-pre-line">{ticket.message}</p>
           </div>
-
-          {/* Conversation History */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 max-h-96 overflow-y-auto w-full">
-            <h2 className="text-lg font-medium mb-4">Conversation</h2>
-            {messages.length === 0 ? (
-              <div className="text-gray-500">No messages yet.</div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((msg, idx) => (
-                  <div key={msg._id || idx} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`rounded-lg px-4 py-2 max-w-[70%] ${msg.sender === 'admin' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-800'}`}>
-                      <div className="text-xs mb-1 font-semibold">{msg.sender === 'admin' ? 'You' : 'User'}</div>
-                      <div>{msg.text}</div>
-                      <div className="text-xs opacity-60 mt-1">{msg.time ? new Date(msg.time).toLocaleString() : ''}</div>
-                    </div>
+          <div className="mt-2 text-xs text-gray-400">Created: {new Date(ticket.createdAt).toLocaleString()}</div>
+          <div className="mt-2 text-xs text-gray-400">Status: {ticket.status}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4">Conversation</h2>
+          {messages.length === 0 ? (
+            <div className="text-gray-500">No messages yet.</div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((msg, idx) => (
+                <div key={msg._id || idx} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`rounded-lg px-4 py-2 max-w-[70%] ${msg.sender === 'admin' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-800'}`}>
+                    <div className="text-xs mb-1 font-semibold">{msg.sender === 'admin' ? 'You' : 'User'}</div>
+                    <div>{msg.text}</div>
+                    <div className="text-xs opacity-60 mt-1">{msg.time ? new Date(msg.time).toLocaleString() : ''}</div>
                   </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
-
-          {/* Reply Box */}
-          <form onSubmit={handleSend} className="bg-white rounded-lg shadow-sm p-4 flex gap-2 items-end w-full">
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+        <form onSubmit={handleSend} className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-semibold mb-4">Reply to Ticket</h2>
+          <div className="mb-4">
             <textarea
-              className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-black/30 resize-none"
-              rows={2}
-              placeholder="Type your reply..."
+              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
+              rows={4}
+              placeholder="Type your reply here..."
               value={reply}
               onChange={e => setReply(e.target.value)}
+              required
               disabled={sending}
             />
-            <button
-              type="submit"
-              className="bg-black text-white px-6 py-2 rounded-lg font-semibold shadow hover:scale-105 hover:shadow-lg transition-all duration-150 disabled:opacity-50"
-              disabled={sending || !reply.trim()}
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Status</label>
+            <select
+              className="border rounded px-2 py-1"
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+              disabled={sending}
             >
-              {sending ? 'Sending...' : 'Send'}
-            </button>
-          </form>
-        </div>
+              <option value="new">New</option>
+              <option value="in-progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+            disabled={sending || !reply.trim()}
+          >
+            {sending ? 'Sending...' : 'Submit Reply'}
+          </button>
+        </form>
       </main>
     </AdminLayout>
   );

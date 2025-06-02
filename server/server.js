@@ -142,7 +142,7 @@ io.on('connection', (socket) => {
       socket.join(ticketRoom);
       ticketInfo.adminId = socket.id;
       activeTicketRooms.set(ticketId, ticketInfo);
-      
+      console.log('Emitting adminJoined for ticketRoom', ticketRoom, 'ticketId', ticketId, 'adminId', socket.id);
       // Notify user that admin has joined
       io.to(ticketRoom).emit('adminJoined', {
         ticketId,
@@ -257,6 +257,9 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+// Expose io instance on app for use in routes
+app.set('io', io);
 
 const PORT = process.env.PORT || 5001;
 

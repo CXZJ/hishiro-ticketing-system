@@ -18,6 +18,7 @@ import { toast } from 'react-hot-toast'
 import { useEffect, useState } from 'react'
 import NotificationBell from '../../components/NotificationBell'
 import { useNotifications } from '../../contexts/NotificationContext'
+import logo from '../../assets/logo.png';
 
 export function Header({ onMenuClick }) {
   const [user] = useAuthState(auth)
@@ -55,76 +56,82 @@ export function Header({ onMenuClick }) {
   }
 
   return (
-    <header className="border-b">
-      <div className="flex h-16 items-center px-4 gap-4">
-        {/* Hamburger menu for mobile only */}
+    <header className="bg-white/70 backdrop-blur-md shadow-xl border-b flex items-center relative h-16 px-2 sm:px-4">
+      {/* Hamburger (mobile) */}
+      <div className="flex items-center">
         <button
-          className="block xl:hidden p-2 rounded hover:bg-gray-200 focus:outline-none"
+          className="block xl:hidden p-2 rounded hover:bg-gray-200 focus:outline-none mr-2"
           onClick={onMenuClick}
           aria-label="Open sidebar"
         >
           <Menu className="h-6 w-6 text-gray-700" />
         </button>
-        <div className="flex items-center space-x-4 flex-1">
-          <span className="text-lg font-semibold text-gray-800">
-            {`Welcome, ${profile?.username || user?.displayName || (user?.email ? user.email.split('@')[0] : 'Admin')}`}
-          </span>
-        </div>
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setShowNotificationsPanel(true)}
-            className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-          >
-            <Bell className="h-6 w-6 text-gray-600" />
-            {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8 border-2 border-primary">
-                  <AvatarImage src={profile?.photoURL ? profile.photoURL : (user?.photoURL ? user.photoURL : (user?.email ? `https://ui-avatars.com/api/?name=${user.email}` : "/placeholder-user.jpg"))} alt="Admin" />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    <Shield className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="h-8 w-8 border-2 border-primary">
-                      <AvatarImage src={profile?.photoURL ? profile.photoURL : (user?.photoURL ? user.photoURL : (user?.email ? `https://ui-avatars.com/api/?name=${user.email}` : "/placeholder-user.jpg"))} alt="Admin" />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        <Shield className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium leading-none">{user?.displayName || 'Admin User'}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user?.email || 'admin@company.com'}</p>
-                    </div>
+      </div>
+      {/* Centered Logo */}
+      <div className="hidden xl:block absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <Link to="/admin">
+          <img src={logo} alt="Logo" className="h-10 drop-shadow-xl" />
+        </Link>
+      </div>
+      {/* Right: Notification, Avatar, Welcome */}
+      <div className="ml-auto flex items-center space-x-4">
+        <button
+          onClick={() => setShowNotificationsPanel(true)}
+          className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+        >
+          <Bell className="h-6 w-6 text-gray-600" />
+          {unreadCount > 0 && (
+            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Avatar className="h-8 w-8 border-2 border-primary">
+                <AvatarImage src={profile?.photoURL ? profile.photoURL : (user?.photoURL ? user.photoURL : (user?.email ? `https://ui-avatars.com/api/?name=${user.email}` : "/placeholder-user.jpg"))} alt="Admin" />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  <Shield className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center space-x-2">
+                  <Avatar className="h-8 w-8 border-2 border-primary">
+                    <AvatarImage src={profile?.photoURL ? profile.photoURL : (user?.photoURL ? user.photoURL : (user?.email ? `https://ui-avatars.com/api/?name=${user.email}` : "/placeholder-user.jpg"))} alt="Admin" />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      <Shield className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium leading-none">{user?.displayName || 'Admin User'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email || 'admin@company.com'}</p>
                   </div>
                 </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/admin/settings" className="flex items-center">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/admin/settings" className="flex items-center">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {/* Welcome message */}
+        <span className="hidden sm:inline text-lg font-semibold text-gray-800 ml-2">
+          {`Welcome, ${profile?.username || user?.displayName || (user?.email ? user.email.split('@')[0] : 'Admin')}`}
+        </span>
       </div>
       {/* Notification Drawer */}
       {showNotificationsPanel && (
