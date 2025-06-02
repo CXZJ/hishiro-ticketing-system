@@ -4,6 +4,55 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Admin
+ *   description: Administrative operations (admin access required)
+ */
+
+/**
+ * @swagger
+ * /api/admin/check:
+ *   get:
+ *     summary: Check if current user has admin privileges
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Admin status check successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isAdmin:
+ *                   type: boolean
+ *                   description: Whether the user has admin privileges
+ *                   example: true
+ *       403:
+ *         description: User is not an admin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isAdmin:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Access denied"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Check if user is admin
 router.get('/check', protect, async (req, res) => {
   try {
@@ -26,6 +75,64 @@ router.get('/check', protect, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/admin/set-admin/{uid}:
+ *   post:
+ *     summary: Grant admin privileges to a user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Firebase UID of the user to grant admin privileges to
+ *         example: "firebase-uid-123"
+ *     responses:
+ *       200:
+ *         description: Admin status granted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Admin status set successfully"
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       403:
+ *         description: Not authorized to set admin status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Not authorized to set admin status"
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Set admin status for a user
 router.post('/set-admin/:uid', protect, async (req, res) => {
   try {
@@ -52,6 +159,64 @@ router.post('/set-admin/:uid', protect, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/admin/remove-admin/{uid}:
+ *   post:
+ *     summary: Remove admin privileges from a user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Firebase UID of the user to remove admin privileges from
+ *         example: "firebase-uid-123"
+ *     responses:
+ *       200:
+ *         description: Admin status removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Admin status removed successfully"
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       403:
+ *         description: Not authorized to remove admin status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Not authorized to remove admin status"
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Remove admin status from a user
 router.post('/remove-admin/:uid', protect, async (req, res) => {
   try {
