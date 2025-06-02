@@ -5,6 +5,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { logInWithEmailAndPassword, signInWithGoogle, auth } from '../firebase';
 import bg   from '../assets/background-scaled.png';
 import logo from '../assets/logo.png';
+import { API_URL } from '../config/api';
 
 export default function Login() {
   const [email, setEmail]       = useState('');
@@ -23,8 +24,7 @@ export default function Login() {
     const checkAdmin = async () => {
       if (user) {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const url = new URL('/api/admin/check', API_URL).toString();
+        const url = `${API_URL}/api/admin/check`;
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -69,7 +69,7 @@ export default function Login() {
       const user = await signInWithGoogle(); // returns the Firebase user object
 
       // Sends user profile to backend
-      await fetch('http://localhost:5000/api/users', {
+      await fetch(`${API_URL}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

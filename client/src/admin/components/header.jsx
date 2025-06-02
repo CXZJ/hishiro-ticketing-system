@@ -21,6 +21,7 @@ import NotificationBell from '../../components/NotificationBell'
 import { useNotifications } from '../../contexts/NotificationContext'
 import logo from '../../assets/logo.png';
 import { io } from 'socket.io-client'
+import { getSocketUrl } from '../../config/api'
 
 export function Header({ onMenuClick }) {
   const [user] = useAuthState(auth)
@@ -51,8 +52,8 @@ export function Header({ onMenuClick }) {
   useEffect(() => {
     if (!user) return;
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const socket = io(API_URL, {
+    const socketUrl = getSocketUrl();
+    const socket = io(socketUrl, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000,

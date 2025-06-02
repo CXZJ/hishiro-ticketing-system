@@ -20,9 +20,5 @@ services:
     restart: always
     depends_on:
       - backend
-    environment:
-      # TODO: Change this to the correct URL
-      VITE_API_URL: ${VITE_API_URL}
-      VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY}
     ports:
       - "3031:3031"

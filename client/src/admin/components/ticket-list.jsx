@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { io } from 'socket.io-client'
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
+import { API_URL, getSocketUrl } from '../../config/api';
 
 function getPriorityColor(priority) {
   switch (priority) {
@@ -67,15 +68,15 @@ export function TicketList({ status, priority, assignee, search, limit }) {
     }
 
     // Connect to socket
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const newSocket = io(API_URL);
+    const socketUrl = getSocketUrl();
+    const newSocket = io(socketUrl);
     setSocket(newSocket);
 
     // Fetch initial tickets
     const fetchTickets = async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch('/api/tickets', {
+        const res = await fetch(`${API_URL}/api/tickets`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

@@ -12,12 +12,20 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        "/service": {
+        "/api": {
           target: mode === "development"
-            ? "http://localhost:5000"
-            : "e2425-wads-l4ccg2-server.csbihub.id",
+            ? "http://localhost:3032"
+            : "http://backend:3032",
           changeOrigin: true,
-          secure: mode !== "development",
+          secure: false,
+          ws: true,
+        },
+        "/socket.io": {
+          target: mode === "development"
+            ? "http://localhost:3032"
+            : "http://backend:3032",
+          changeOrigin: true,
+          secure: false,
           ws: true,
         },
       },

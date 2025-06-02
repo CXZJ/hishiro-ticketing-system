@@ -6,6 +6,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { io } from 'socket.io-client';
 import { v4 as uuidv4 } from 'uuid';
 import { useNotifications } from '../contexts/NotificationContext';
+import { API_URL, getSocketUrl } from '../config/api';
 
 export default function TicketChat() {
   const { ticketId } = useParams();
@@ -119,8 +120,8 @@ export default function TicketChat() {
   // Real-time updates with Socket.IO
   useEffect(() => {
     if (!user) return;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const sock = io(API_URL, {
+    const socketUrl = getSocketUrl();
+    const sock = io(socketUrl, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000,
@@ -316,8 +317,7 @@ export default function TicketChat() {
     const checkAdmin = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const url = new URL('/api/admin/check', API_URL).toString();
+        const url = `${API_URL}/api/admin/check`;
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`,

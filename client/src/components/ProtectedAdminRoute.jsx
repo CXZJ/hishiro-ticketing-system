@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase';
 import toast from 'react-hot-toast';
+import { API_URL } from '../config/api';
 //import { protect, adminMiddleware } from '../middleware/authMiddleware.js';
 
 export default function ProtectedAdminRoute({ children }) {
@@ -20,8 +21,7 @@ export default function ProtectedAdminRoute({ children }) {
 
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        const url = new URL('/api/admin/check', API_URL).toString();
+        const url = `${API_URL}/api/admin/check`;
         console.log('Checking admin status at:', url);
         
         const response = await fetch(url, {

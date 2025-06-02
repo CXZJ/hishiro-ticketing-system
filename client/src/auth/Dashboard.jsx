@@ -40,7 +40,8 @@ import {
 } from '../components/ui/dropdown-menu';
 import { Select } from "../components/ui/select";
 import { toast } from 'react-hot-toast';
-import { io } from 'socket.io-client';
+import { io } from "socket.io-client";
+import { API_URL, getSocketUrl } from '../config/api';
 
 export default function Dashboard() {
   const [user, loading] = useAuthState(auth);
@@ -106,8 +107,8 @@ export default function Dashboard() {
     const checkAdmin = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
-        const url = new URL('/api/admin/check', API_URL).toString();
+        const apiUrl = API_URL;
+        const url = `${apiUrl}/api/admin/check`;
         const response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -131,10 +132,10 @@ export default function Dashboard() {
     const getToken = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+        const apiUrl = API_URL;
         
         // Fetch user's tickets
-        const ticketsRes = await fetch(`${API_URL}/api/tickets/user`, {
+        const ticketsRes = await fetch(`${apiUrl}/api/tickets/user`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -152,7 +153,7 @@ export default function Dashboard() {
         setTickets(Array.isArray(ticketsData) ? ticketsData : []);
 
         // Fetch user info
-        const userRes = await fetch(`${API_URL}/api/users/me`, {
+        const userRes = await fetch(`${apiUrl}/api/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -195,8 +196,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const socket = io(API_URL, {
+    const socketUrl = getSocketUrl();
+    const socket = io(socketUrl, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000,
@@ -339,7 +340,8 @@ export default function Dashboard() {
     setSaving(true);
     try {
       const token = await user.getIdToken();
-      const res = await fetch('/api/users/me', {
+      const apiUrl = API_URL;
+      const res = await fetch(`${apiUrl}/api/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -349,7 +351,7 @@ export default function Dashboard() {
       });
       if (!res.ok) throw new Error('Failed to update profile');
       // Re-fetch user info to ensure latest data (especially photoURL)
-      const userRes = await fetch('/api/users/me', {
+      const userRes = await fetch(`${apiUrl}/api/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const updated = await userRes.json();
@@ -412,8 +414,8 @@ export default function Dashboard() {
     setSubmitting(true);
     try {
       const token = await user.getIdToken();
-      const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
-      const res = await fetch(`${API_URL}/api/tickets`, {
+      const apiUrl = API_URL;
+      const res = await fetch(`${apiUrl}/api/tickets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
