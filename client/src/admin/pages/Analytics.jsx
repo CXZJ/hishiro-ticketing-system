@@ -262,115 +262,117 @@ export default function Analytics() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-            <p className="text-muted-foreground">Advanced insights and performance metrics</p>
+      <div className="max-w-7xl mx-auto w-full">
+        <div className="space-y-6 p-2 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+              <p className="text-muted-foreground">Advanced insights and performance metrics</p>
+            </div>
+            <div className="flex gap-2 mt-4 sm:mt-0">
+              {['7d', '30d', '90d'].map((range) => (
+                <Button
+                  key={range}
+                  variant={timeRange === range ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeRange(range)}
+                >
+                  {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
+                </Button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 mt-4 sm:mt-0">
-            {['7d', '30d', '90d'].map((range) => (
-              <Button
-                key={range}
-                variant={timeRange === range ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTimeRange(range)}
-              >
-                {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
-              </Button>
-            ))}
-          </div>
-        </div>
 
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Status Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ height: 250 }}>
-                <Bar data={statusBarData} options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { 
-                    legend: { display: false }
-                  },
-                  scales: { 
-                    y: { beginAtZero: true },
-                    x: {
-                      grid: {
-                        display: false
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Status Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div style={{ height: 250 }}>
+                  <Bar data={statusBarData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                      legend: { display: false }
+                    },
+                    scales: { 
+                      y: { beginAtZero: true },
+                      x: {
+                        grid: {
+                          display: false
+                        }
                       }
                     }
-                  }
-                }} />
-              </div>
-            </CardContent>
-          </Card>
+                  }} />
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Priority Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ height: 250 }}>
-                <Doughnut data={priorityDoughnutData} options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { 
-                    legend: { position: 'bottom' }
-                  }
-                }} />
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Priority Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div style={{ height: 250 }}>
+                  <Doughnut data={priorityDoughnutData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                      legend: { position: 'bottom' }
+                    }
+                  }} />
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Metrics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ height: 250 }}>
-                <Line data={performanceData} options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { 
-                    legend: { position: 'top' }
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      max: 100,
-                      title: {
-                        display: true,
-                        text: 'Percentage (%)'
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div style={{ height: 250 }}>
+                  <Line data={performanceData} options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                      legend: { position: 'top' }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                          display: true,
+                          text: 'Percentage (%)'
+                        }
                       }
                     }
-                  }
-                }} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  }} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Quick Stats Grid */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          <Card className="text-center p-4">
-            <div className="text-2xl font-bold text-blue-600">{todayTickets}</div>
-            <div className="text-sm text-muted-foreground">Tickets Today</div>
-          </Card>
-          <Card className="text-center p-4">
-            <div className="text-2xl font-bold text-green-600">{todayResolved}</div>
-            <div className="text-sm text-muted-foreground">Resolved Today</div>
-          </Card>
-          <Card className="text-center p-4">
-            <div className="text-2xl font-bold text-orange-600">{Math.round(avgResponseTime * 10) / 10}h</div>
-            <div className="text-sm text-muted-foreground">Avg Response</div>
-          </Card>
-          <Card className="text-center p-4">
-            <div className="text-2xl font-bold text-purple-600">{firstContactResolution}%</div>
-            <div className="text-sm text-muted-foreground">First Contact Resolution</div>
-          </Card>
+          {/* Quick Stats Grid */}
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Card className="text-center p-4">
+              <div className="text-2xl font-bold text-blue-600">{todayTickets}</div>
+              <div className="text-sm text-muted-foreground">Tickets Today</div>
+            </Card>
+            <Card className="text-center p-4">
+              <div className="text-2xl font-bold text-green-600">{todayResolved}</div>
+              <div className="text-sm text-muted-foreground">Resolved Today</div>
+            </Card>
+            <Card className="text-center p-4">
+              <div className="text-2xl font-bold text-orange-600">{Math.round(avgResponseTime * 10) / 10}h</div>
+              <div className="text-sm text-muted-foreground">Avg Response</div>
+            </Card>
+            <Card className="text-center p-4">
+              <div className="text-2xl font-bold text-purple-600">{firstContactResolution}%</div>
+              <div className="text-sm text-muted-foreground">First Contact Resolution</div>
+            </Card>
+          </div>
         </div>
       </div>
     </AdminLayout>

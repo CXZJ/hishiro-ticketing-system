@@ -721,9 +721,6 @@ export default function Dashboard() {
                 <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">Open Tickets</div>
                 <p className="text-gray-500">New tickets that need attention</p>
               </div>
-              <Button onClick={() => setShowNewTicketForm(true)} className="bg-black text-white font-semibold px-4 py-2 rounded-lg shadow hover:bg-gray-900 transition-all duration-150">
-                New Ticket
-              </Button>
             </div>
             
             {/* Search and Filters */}
