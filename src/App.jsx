@@ -22,6 +22,7 @@ import Reset        from './auth/Reset'
 import Profile      from './auth/Profile'
 import Dashboard    from './auth/Dashboard'
 import AdminLogin   from './auth/AdminLogin'
+import VerifyEmail  from './auth/VerifyEmail'
 
 // admin
 import AdminDashboard from './admin/pages/Dashboard'
@@ -151,6 +152,7 @@ export default function App() {
             <Route path="/reset"  element={<Reset />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
             {/* Admin auth */}
             <Route path="/admin/login" element={<AdminLogin />} />

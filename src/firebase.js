@@ -17,6 +17,7 @@ import {
   sendPasswordResetEmail,
   signOut,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -51,6 +52,9 @@ export const registerWithEmailAndPassword = async (
 ) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(result.user, {
+      url: 'http://localhost:5173/verify-email'
+    });
     return result.user;
   } catch (error) {
     throw error;
@@ -60,7 +64,13 @@ export const registerWithEmailAndPassword = async (
 // Login with email and password
 export const logInWithEmailAndPassword = async (email, password) => {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    await result.user.reload();
+    if (!result.user.emailVerified) {
+      await signOut(auth); // SignS out if email not verified
+      throw new Error("Please verify your email before logging in.");
+    }
+    return result.user;
   } catch (error) {
     throw error;
   }
