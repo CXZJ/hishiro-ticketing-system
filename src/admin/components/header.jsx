@@ -67,7 +67,7 @@ export function Header({ onMenuClick }) {
         </button>
         <div className="flex items-center space-x-4 flex-1">
           <span className="text-lg font-semibold text-gray-800">
-            {`Welcome, ${user?.displayName || user?.username || (user?.email ? user.email.split('@')[0] : 'Admin')}`}
+            {`Welcome, ${profile?.username || user?.displayName || (user?.email ? user.email.split('@')[0] : 'Admin')}`}
           </span>
         </div>
         <div className="flex items-center space-x-4">

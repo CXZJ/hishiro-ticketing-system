@@ -20,20 +20,33 @@ const router = express.Router();
  *       required:
  *         - subject
  *         - message
+ *         - userId
+ *         - botResponse
  *       properties:
  *         _id:
  *           type: string
- *           description: The auto-generated id of the ticket
+ *           format: ObjectId
+ *           description: The MongoDB ObjectId of the ticket
+ *         userId:
+ *           type: string
+ *           description: The Firebase user ID of the ticket creator
  *         subject:
  *           type: string
  *           description: The ticket subject
  *         message:
  *           type: string
  *           description: The ticket message
+ *         botResponse:
+ *           type: string
+ *           description: The initial bot response to the ticket
  *         status:
  *           type: string
  *           enum: [new, in-progress, resolved]
  *           description: The ticket status
+ *         priority:
+ *           type: string
+ *           enum: [low, medium, high]
+ *           description: The ticket priority
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -80,11 +93,20 @@ const router = express.Router();
  *             required:
  *               - subject
  *               - message
+ *               - userId
+ *               - botResponse
  *             properties:
  *               subject:
  *                 type: string
  *               message:
  *                 type: string
+ *               userId:
+ *                 type: string
+ *               botResponse:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *                 enum: [low, medium, high]
  *     responses:
  *       201:
  *         description: The ticket was successfully created
@@ -120,8 +142,9 @@ router.get('/user', protect, async (req, res) => {
  *         name: id
  *         schema:
  *           type: string
+ *           format: ObjectId
  *         required: true
- *         description: The ticket id
+ *         description: The MongoDB ObjectId of the ticket
  *     responses:
  *       200:
  *         description: The ticket description by id
@@ -141,8 +164,9 @@ router.get('/user', protect, async (req, res) => {
  *         name: id
  *         schema:
  *           type: string
+ *           format: ObjectId
  *         required: true
- *         description: The ticket id
+ *         description: The MongoDB ObjectId of the ticket
  *     requestBody:
  *       required: true
  *       content:
@@ -152,11 +176,21 @@ router.get('/user', protect, async (req, res) => {
  *             properties:
  *               subject:
  *                 type: string
+ *                 description: The updated ticket subject
  *               message:
  *                 type: string
+ *                 description: The updated ticket message
  *               status:
  *                 type: string
  *                 enum: [new, in-progress, resolved]
+ *                 description: The updated ticket status
+ *               priority:
+ *                 type: string
+ *                 enum: [low, medium, high]
+ *                 description: The updated ticket priority
+ *               botResponse:
+ *                 type: string
+ *                 description: The updated bot response
  *     responses:
  *       200:
  *         description: The ticket was updated
@@ -176,8 +210,9 @@ router.get('/user', protect, async (req, res) => {
  *         name: id
  *         schema:
  *           type: string
+ *           format: ObjectId
  *         required: true
- *         description: The ticket id
+ *         description: The MongoDB ObjectId of the ticket
  *     responses:
  *       200:
  *         description: The ticket was deleted

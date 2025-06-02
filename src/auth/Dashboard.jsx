@@ -36,6 +36,7 @@ import {
   DropdownMenuSeparator,
 } from '../components/ui/dropdown-menu';
 import { Select } from "../components/ui/select";
+import { toast } from 'react-hot-toast';
 
 export default function Dashboard() {
   const [user, loading] = useAuthState(auth);
@@ -68,6 +69,8 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [wordCount, setWordCount] = useState(0);
+  const [descriptionError, setDescriptionError] = useState('');
 
   useEffect(() => {
     if (showNotificationsPanel) {
@@ -87,6 +90,13 @@ export default function Dashboard() {
       navigate("/login");
       return;
     }
+
+    // Add this temporary function to get the token
+    const getTokenID = async () => {
+      const token = await user.getIdToken();
+      console.log('Your Firebase ID token:', token);
+    };
+    getTokenID();
 
     // Check if user is admin and redirect if so
     const checkAdmin = async () => {
@@ -269,11 +279,25 @@ export default function Dashboard() {
 
   const handleNewTicketChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'description') {
+      const words = value.trim().split(/\s+/).filter(word => word.length > 0);
+      setWordCount(words.length);
+      if (words.length < 15) {
+        setDescriptionError('Description must be at least 15 words');
+      } else {
+        setDescriptionError('');
+      }
+    }
     setNewTicket((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleNewTicketSubmit = async (e) => {
     e.preventDefault();
+    if (wordCount < 15) {
+      setDescriptionError('Description must be at least 15 words');
+      toast.error('Please provide more details. Your description needs at least 15 words to help us better understand your issue.');
+      return;
+    }
     setSubmitting(true);
     try {
       const token = await user.getIdToken();
@@ -298,6 +322,8 @@ export default function Dashboard() {
       setTickets((prev) => [created, ...prev]);
       setShowNewTicketForm(false);
       setNewTicket({ title: '', description: '', category: 'Bug', priority: 'Low' });
+      setWordCount(0);
+      setDescriptionError('');
     } catch (err) {
       alert('Failed to create ticket.');
     } finally {
@@ -467,7 +493,21 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <Label className="block mb-1 font-medium">Description of the Problem</Label>
-                  <textarea name="description" value={newTicket.description} onChange={handleNewTicketChange} required className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-black/30 resize-none" rows={3} placeholder="Describe your problem..." />
+                  <textarea 
+                    name="description" 
+                    value={newTicket.description} 
+                    onChange={handleNewTicketChange} 
+                    required 
+                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-black/30 resize-none ${descriptionError ? 'border-red-500' : ''}`} 
+                    rows={5} 
+                    placeholder="Describe your problem in detail (minimum 15 words)..." 
+                  />
+                  <div className="flex justify-between items-center mt-1">
+                    <span className={`text-sm ${descriptionError ? 'text-red-500' : 'text-gray-500'}`}>
+                      {descriptionError || `${wordCount}/15 words minimum`}
+                    </span>
+                    <span className="text-sm text-gray-500">{wordCount} words</span>
+                  </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
@@ -891,7 +931,7 @@ export default function Dashboard() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <img
-                    src={userInfo?.photoURL ? userInfo.photoURL : `https://ui-avatars.com/api/?name=${user.email}`}
+                    src={userInfo?.photoURL ? userInfo.photoURL : `https://ui-avatars.com/api/?name=${userInfo?.username || user.email}`}
                     alt="Profile"
                     className="w-10 h-10 rounded-full border-2 border-gray-200 shadow object-cover cursor-pointer"
                   />
@@ -906,7 +946,7 @@ export default function Dashboard() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <p className="font-medium">{user?.displayName || user?.email?.split('@')[0]}</p>
+              <p className="font-medium">{userInfo?.username || user?.displayName || user?.email?.split('@')[0]}</p>
             </div>
           </div>
         </div>
@@ -917,7 +957,7 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row items-center gap-4 py-4 sm:py-6">
           <div className="text-center sm:text-left w-full">
             <div className="mb-2 text-lg font-medium text-gray-700">
-              Welcome, <span className="font-bold">{user?.displayName || user?.email?.split('@')[0] || 'User'}</span>
+              Welcome, <span className="font-bold">{userInfo?.username || user?.displayName || user?.email?.split('@')[0] || 'User'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-1 flex items-center gap-2 justify-center sm:justify-start">
               Your Dashboard
