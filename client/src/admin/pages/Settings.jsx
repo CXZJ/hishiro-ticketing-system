@@ -36,7 +36,7 @@ export default function Settings() {
     const fetchUserInfo = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         
         // Fetch user info
         const userRes = await fetch(`${API_URL}/api/users/me`.replace(/([^:]\/)\/+/g, "$1"), {
@@ -102,7 +102,7 @@ export default function Settings() {
     setSaving(true);
     try {
       const token = await user.getIdToken();
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       const res = await fetch(`${API_URL}/api/users/me`.replace(/([^:]\/)\/+/g, "$1"), {
         method: 'PATCH',
         headers: {

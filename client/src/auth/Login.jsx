@@ -23,7 +23,7 @@ export default function Login() {
     const checkAdmin = async () => {
       if (user) {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         const url = new URL('/api/admin/check', API_URL).toString();
         const response = await fetch(url, {
           headers: {

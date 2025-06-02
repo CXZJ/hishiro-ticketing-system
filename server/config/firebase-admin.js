@@ -4,12 +4,24 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Initialize Firebase Admin
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+let serviceAccount;
+try {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+} catch (error) {
+  console.error('Error parsing FIREBASE_SERVICE_ACCOUNT:', error);
+  serviceAccount = {};
+}
 
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Error initializing Firebase Admin:', error);
+    throw new Error('Failed to initialize Firebase Admin. Please check your service account credentials.');
+  }
 }
 
 // Function to set admin claims
