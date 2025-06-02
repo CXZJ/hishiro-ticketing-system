@@ -25,21 +25,21 @@ export default function Tickets() {
 
   return (
     <AdminLayout>
-      <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
-        <div className="space-y-6">
+      <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 max-w-full">
+        <div className="space-y-6 max-w-full overflow-hidden">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Tickets</h1>
             <p className="text-muted-foreground text-sm sm:text-base">Manage and track support tickets</p>
           </div>
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+          <div className="space-y-4 w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 w-full">
               <Input
                 placeholder="Search tickets..."
-                className="mb-2 max-w-xs sm:mb-0"
+                className="mb-2 w-full sm:w-auto sm:max-w-xs sm:mb-0 min-w-0"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <Filters
                   status={status}
                   setStatus={setStatus}
@@ -55,7 +55,9 @@ export default function Tickets() {
                 />
               </div>
             </div>
-            <TicketList status={status} priority={priority} assignee={assignee} search={search} />
+            <div className="w-full overflow-hidden">
+              <TicketList status={status} priority={priority} assignee={assignee} search={search} />
+            </div>
           </div>
         </div>
       </main>

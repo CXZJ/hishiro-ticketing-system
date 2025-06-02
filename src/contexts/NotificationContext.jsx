@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const NotificationContext = createContext();
 
@@ -27,6 +28,24 @@ const getNotificationIcon = (type) => {
       return (
         <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.732 18.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+      );
+    case 'status':
+      return (
+        <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    case 'priority':
+      return (
+        <svg className="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      );
+    case 'admin':
+      return (
+        <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       );
     default:
@@ -130,7 +149,32 @@ export function NotificationProvider({ children }) {
       // Don't store the icon directly, let the component generate it
       icon: undefined
     };
+    
     setNotifications(prev => [newNotification, ...prev]);
+
+    // Show toast notification for immediate feedback
+    const toastOptions = {
+      duration: 4000,
+      position: 'top-right',
+      style: {
+        background: '#fff',
+        color: '#374151',
+        border: '1px solid #e5e7eb',
+        borderRadius: '0.5rem',
+        padding: '12px 16px',
+        fontSize: '14px',
+        maxWidth: '320px',
+      },
+      icon: notification.type === 'message' ? '💬' : 
+            notification.type === 'status' ? '📋' : 
+            notification.type === 'priority' ? '⚡' : 
+            notification.type === 'admin' ? '👤' : '📌',
+    };
+
+    toast(
+      `${notification.title}\n${notification.message.length > 60 ? notification.message.substring(0, 60) + '...' : notification.message}`,
+      toastOptions
+    );
   };
 
   const markAsRead = (notificationId) => {

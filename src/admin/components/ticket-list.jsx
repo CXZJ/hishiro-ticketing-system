@@ -135,12 +135,12 @@ export function TicketList({ status, priority, assignee, search, limit }) {
   // so no need for a separate check here for rendering.
 
   return (
-    <Card>
+    <Card className="w-full overflow-hidden">
       <CardHeader>
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="p-0">
+        <div className="space-y-4 p-6">
           {(limit ? tickets.slice(0, limit) : tickets).map((ticket) => {
             // Priority emoji
             let priorityEmoji = '🟢';
@@ -168,35 +168,37 @@ export function TicketList({ status, priority, assignee, search, limit }) {
             return (
               <div
                 key={ticket._id}
-                className="bg-white border border-zinc-100 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm"
+                className="bg-white border border-zinc-100 rounded-2xl p-4 sm:p-6 shadow-sm w-full overflow-hidden"
               >
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <span className="text-xl mt-1">{priorityEmoji}</span>
-                  <div className="min-w-0">
-                    <div className="font-bold text-base sm:text-lg truncate">{ticket.subject || ticket.message}</div>
-                    <div className="text-xs text-gray-400 truncate">Ticket #{ticket._id.substring(0, 8)}</div>
-                    {ticket.userEmail && (
-                      <div className="text-xs text-gray-500 truncate">User: {ticket.userEmail}</div>
-                    )}
-                    {!ticket.userEmail && ticket.userId && (
-                      <div className="text-xs text-gray-500 truncate">User ID: {ticket.userId}</div>
-                    )}
-                    <div className="text-gray-600 text-sm whitespace-pre-line">{ticket.message}</div>
-                    <div className="text-xs text-gray-400 mt-1">Created: {new Date(ticket.createdAt).toLocaleDateString()}</div>
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1 min-w-0 overflow-hidden">
+                    <span className="text-xl flex-shrink-0 mt-1">{priorityEmoji}</span>
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <div className="font-bold text-base sm:text-lg break-words">{ticket.subject || ticket.message}</div>
+                      <div className="text-xs text-gray-400 break-all">Ticket #{ticket._id.substring(0, 8)}</div>
+                      {ticket.userEmail && (
+                        <div className="text-xs text-gray-500 break-words">User: {ticket.userEmail}</div>
+                      )}
+                      {!ticket.userEmail && ticket.userId && (
+                        <div className="text-xs text-gray-500 break-all">User ID: {ticket.userId}</div>
+                      )}
+                      <div className="text-gray-600 text-sm mt-2 break-words whitespace-pre-wrap">{ticket.message}</div>
+                      <div className="text-xs text-gray-400 mt-2">Created: {new Date(ticket.createdAt).toLocaleDateString()}</div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col items-end gap-2 min-w-fit sm:ml-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${statusColor} bg-white mb-1 flex items-center gap-1`}>
-                    <span>{statusEmoji}</span>
-                    {statusText}
-                  </span>
-                  <button
-                    onClick={() => navigate(`/chat/${ticket._id}`)}
-                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 p-0 h-7 text-sm font-medium"
-                  >
-                    <Eye className="h-4 w-4 inline-block" />
-                    View
-                  </button>
+                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-start gap-2 flex-shrink-0">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${statusColor} bg-white flex items-center gap-1 whitespace-nowrap`}>
+                      <span>{statusEmoji}</span>
+                      {statusText}
+                    </span>
+                    <button
+                      onClick={() => navigate(`/chat/${ticket._id}`)}
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm font-medium whitespace-nowrap"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View
+                    </button>
+                  </div>
                 </div>
               </div>
             );

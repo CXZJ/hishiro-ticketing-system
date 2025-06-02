@@ -42,6 +42,37 @@ const createTicket = async (req, res) => {
       category,
       priority,
     });
+
+    // Emit notification to all admins about new ticket
+    if (req.app.get('io')) {
+      const io = req.app.get('io');
+      
+      // Broadcast to admin notification room
+      io.to('admin_notifications').emit('newTicketCreated', {
+        ticketId: ticket._id,
+        ticketSubject: ticket.subject || 'New Support Request',
+        userEmail: req.user.email || 'Unknown User',
+        userName: req.user.displayName || req.user.email?.split('@')[0] || 'User',
+        message: ticket.message,
+        priority: ticket.priority || 'medium',
+        time: new Date().toLocaleString()
+      });
+
+      // Send urgent alert for high priority tickets
+      if (ticket.priority === 'high') {
+        io.to('admin_notifications').emit('urgentTicketAlert', {
+          ticketId: ticket._id,
+          ticketSubject: ticket.subject || 'Urgent Support Request',
+          userName: req.user.displayName || req.user.email?.split('@')[0] || 'User',
+          message: ticket.message,
+          time: new Date().toLocaleString()
+        });
+        console.log(`Urgent ticket alert sent for high priority ticket ${ticket._id}`);
+      }
+
+      console.log(`New ticket notification sent to admins for ticket ${ticket._id}`);
+    }
+
     res.status(201).json(ticket);
   } catch (error) {
     res.status(400).json({ message: error.message });

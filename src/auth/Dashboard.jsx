@@ -17,6 +17,9 @@ import {
   XMarkIcon,
   HomeIcon,
   EyeIcon,
+  ArchiveBoxIcon,
+  ArrowPathIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import logo from "../assets/logo.png";
 import NotificationBell from '../components/NotificationBell';
@@ -37,6 +40,7 @@ import {
 } from '../components/ui/dropdown-menu';
 import { Select } from "../components/ui/select";
 import { toast } from 'react-hot-toast';
+import { io } from 'socket.io-client';
 
 export default function Dashboard() {
   const [user, loading] = useAuthState(auth);
@@ -56,7 +60,7 @@ export default function Dashboard() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
-  const { notifications, unreadCount, markAsRead, markAllAsRead, getNotificationIcon } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, getNotificationIcon, addNotification } = useNotifications();
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   const [newTicket, setNewTicket] = useState({
@@ -187,6 +191,109 @@ export default function Dashboard() {
     }
   }, [user, loading, navigate, darkMode]);
 
+  // Real-time notifications for ticket updates
+  useEffect(() => {
+    if (!user) return;
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const socket = io(API_URL, {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000,
+    });
+
+    socket.on('connect', () => {
+      console.log('Dashboard socket connected');
+      // Join user-specific room for notifications
+      socket.emit('userJoinNotificationRoom', user.uid);
+    });
+
+    // Listen for admin replies to user's tickets
+    socket.on('adminReplyToUserTicket', (data) => {
+      addNotification({
+        title: '💬 New Reply from Support',
+        message: `Admin replied to ticket "${data.ticketSubject}": "${data.message.substring(0, 50)}${data.message.length > 50 ? '...' : ''}"`,
+        type: 'message',
+        ticketId: data.ticketId,
+        ticketSubject: data.ticketSubject
+      });
+
+      // Browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('💬 New Reply from Support', {
+          body: `Admin replied to: "${data.ticketSubject}"`,
+          icon: '/favicon.ico',
+          tag: `ticket-reply-${data.ticketId}`,
+          requireInteraction: false
+        });
+
+        setTimeout(() => notification.close(), 5000);
+
+        notification.onclick = () => {
+          window.focus();
+          navigate(`/ticket/${data.ticketId}`);
+          notification.close();
+        };
+      }
+    });
+
+    // Listen for ticket status updates
+    socket.on('userTicketStatusUpdated', (data) => {
+      const statusEmojis = {
+        'new': '🆕',
+        'in-progress': '⏳',
+        'resolved': '✅',
+        'closed': '🔒'
+      };
+
+      addNotification({
+        title: `${statusEmojis[data.status] || '📋'} Ticket Status Updated`,
+        message: `Ticket "${data.ticketSubject}" status changed to: ${data.status}`,
+        type: 'status',
+        ticketId: data.ticketId,
+        ticketSubject: data.ticketSubject
+      });
+
+      // Refresh tickets if on tickets tab
+      if (activeTab === 'tickets') {
+        fetchTickets();
+      }
+    });
+
+    // Listen for ticket priority updates
+    socket.on('userTicketPriorityUpdated', (data) => {
+      const priorityEmojis = {
+        'low': '🟢',
+        'medium': '🟡',
+        'high': '🔴'
+      };
+
+      addNotification({
+        title: `${priorityEmojis[data.priority] || '⚡'} Priority Updated`,
+        message: `Ticket "${data.ticketSubject}" priority changed to: ${data.priority}`,
+        type: 'priority',
+        ticketId: data.ticketId,
+        ticketSubject: data.ticketSubject
+      });
+
+      // Refresh tickets if on tickets tab
+      if (activeTab === 'tickets') {
+        fetchTickets();
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user, addNotification, navigate, activeTab]);
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center">
@@ -258,7 +365,8 @@ export default function Dashboard() {
   // Initialize stats with empty array if tickets is not an array
   const stats = {
     total: Array.isArray(tickets) ? tickets.length : 0,
-    open: Array.isArray(tickets) ? tickets.filter((t) => t.status === "new" || t.status === "in-progress").length : 0,
+    open: Array.isArray(tickets) ? tickets.filter((t) => t.status === "new").length : 0,
+    inProgress: Array.isArray(tickets) ? tickets.filter((t) => t.status === "in-progress").length : 0,
     resolved: Array.isArray(tickets) ? tickets.filter((t) => t.status === "resolved").length : 0,
   };
 
@@ -266,6 +374,9 @@ export default function Dashboard() {
     { id: "home", label: "Home", icon: HomeIcon, action: () => { navigate('/'); setShowSidebar(false); } },
     { id: "overview", label: "Overview", icon: UserCircleIcon },
     { id: "tickets", label: "My Tickets", icon: TicketIcon },
+    { id: "open-tickets", label: "Open Tickets", icon: ChatBubbleLeftRightIcon },
+    { id: "in-progress", label: "In Progress", icon: ArrowPathIcon },
+    { id: "resolved", label: "Resolved", icon: CheckCircleIcon },
     { id: "notifications", label: "Notifications", icon: BellIcon },
     { id: "settings", label: "Settings", icon: Cog6ToothIcon },
   ];
@@ -350,7 +461,7 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">Your Dashboard</div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
@@ -367,6 +478,15 @@ export default function Dashboard() {
                     <p className="text-2xl font-semibold">{stats.open}</p>
                   </div>
                   <ClockIcon className="h-8 w-8 text-yellow-500" />
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">In Progress</p>
+                    <p className="text-2xl font-semibold">{stats.inProgress}</p>
+                  </div>
+                  <ArrowPathIcon className="h-8 w-8 text-blue-500" />
                 </div>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -592,6 +712,275 @@ export default function Dashboard() {
           </div>
         );
 
+      case "open-tickets":
+        const openTickets = tickets.filter(ticket => ticket.status === "new");
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">Open Tickets</div>
+                <p className="text-gray-500">New tickets that need attention</p>
+              </div>
+              <Button onClick={() => setShowNewTicketForm(true)} className="bg-black text-white font-semibold px-4 py-2 rounded-lg shadow hover:bg-gray-900 transition-all duration-150">
+                New Ticket
+              </Button>
+            </div>
+            
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <input
+                type="text"
+                placeholder="Search open tickets..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="border rounded-lg px-3 py-2 w-full sm:w-1/3"
+              />
+              <select
+                value={priorityFilter}
+                onChange={e => setPriorityFilter(e.target.value)}
+                className="border rounded-lg px-3 py-2 w-full sm:w-1/6"
+              >
+                <option value="all">All Priorities</option>
+                <option value="low">🟢 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🔴 High</option>
+              </select>
+            </div>
+
+            {/* Tickets List */}
+            {openTickets.length > 0 ? (
+              <div className="space-y-4">
+                {openTickets
+                  .filter(ticket => {
+                    const matchesSearch =
+                      ticket.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      ticket.message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      ticket._id?.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesPriority =
+                      priorityFilter === "all" || ticket.priority === priorityFilter;
+                    return matchesSearch && matchesPriority;
+                  })
+                  .map((ticket) => (
+                    <div key={ticket._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="mr-2 text-lg">
+                            {ticket.priority === "high" ? "🔴" : ticket.priority === "medium" ? "🟡" : "🟢"}
+                          </span>
+                          <div>
+                            <div className="font-bold text-lg">{ticket.subject || ticket.message}</div>
+                            <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold border-2 border-purple-500 text-purple-700 bg-white">
+                          New
+                        </span>
+                      </div>
+                      <div className="text-gray-600 text-sm">{ticket.message}</div>
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-xs text-gray-400">
+                          Created: {new Date(ticket.createdAt).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/chat/${ticket._id}`)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <EyeIcon className="h-4 w-4 inline-block" />
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <ClockIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">No open tickets</h4>
+                <p className="text-gray-500">All your tickets have been taken care of!</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case "in-progress":
+        const inProgressTickets = tickets.filter(ticket => ticket.status === "in-progress");
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">In Progress Tickets</div>
+                <p className="text-gray-500">Tickets that are currently being worked on</p>
+              </div>
+            </div>
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <input
+                type="text"
+                placeholder="Search in progress tickets..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="border rounded-lg px-3 py-2 w-full sm:w-1/3"
+              />
+              <select
+                value={priorityFilter}
+                onChange={e => setPriorityFilter(e.target.value)}
+                className="border rounded-lg px-3 py-2 w-full sm:w-1/6"
+              >
+                <option value="all">All Priorities</option>
+                <option value="low">🟢 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🔴 High</option>
+              </select>
+            </div>
+            {/* Tickets List */}
+            {inProgressTickets.length > 0 ? (
+              <div className="space-y-4">
+                {inProgressTickets
+                  .filter(ticket => {
+                    const matchesSearch =
+                      ticket.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      ticket.message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      ticket._id?.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesPriority =
+                      priorityFilter === "all" || ticket.priority === priorityFilter;
+                    return matchesSearch && matchesPriority;
+                  })
+                  .map((ticket) => (
+                    <div key={ticket._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="mr-2 text-lg">
+                            {ticket.priority === "high" ? "🔴" : ticket.priority === "medium" ? "🟡" : "🟢"}
+                          </span>
+                          <div>
+                            <div className="font-bold text-lg">{ticket.subject || ticket.message}</div>
+                            <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold border-2 border-blue-500 text-blue-700 bg-white">
+                          In Progress
+                        </span>
+                      </div>
+                      <div className="text-gray-600 text-sm">{ticket.message}</div>
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-xs text-gray-400">
+                          Updated: {new Date(ticket.updatedAt || ticket.createdAt).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/chat/${ticket._id}`)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <EyeIcon className="h-4 w-4 inline-block" />
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <ArrowPathIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">No in progress tickets</h4>
+                <p className="text-gray-500">You don't have any tickets currently in progress.</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case "resolved":
+        const resolvedTickets = tickets.filter(ticket => ticket.status === "resolved" || ticket.status === "closed");
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+              <div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">Resolved Tickets</div>
+                <p className="text-gray-500">Tickets that have been resolved or closed</p>
+              </div>
+              <Button onClick={() => setActiveTab('tickets')} variant="outline" className="font-semibold px-4 py-2 rounded-lg shadow transition-all duration-150">
+                View All Tickets
+              </Button>
+            </div>
+            
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <input
+                type="text"
+                placeholder="Search resolved tickets..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="border rounded-lg px-3 py-2 w-full sm:w-1/3"
+              />
+              <select
+                value={priorityFilter}
+                onChange={e => setPriorityFilter(e.target.value)}
+                className="border rounded-lg px-3 py-2 w-full sm:w-1/6"
+              >
+                <option value="all">All Priorities</option>
+                <option value="low">🟢 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🔴 High</option>
+              </select>
+            </div>
+
+            {/* Tickets List */}
+            {resolvedTickets.length > 0 ? (
+              <div className="space-y-4">
+                {resolvedTickets
+                  .filter(ticket => {
+                    const matchesSearch =
+                      ticket.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      ticket.message?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      ticket._id?.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesPriority =
+                      priorityFilter === "all" || ticket.priority === priorityFilter;
+                    return matchesSearch && matchesPriority;
+                  })
+                  .map((ticket) => (
+                    <div key={ticket._id} className="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="mr-2 text-lg">
+                            {ticket.priority === "high" ? "🔴" : ticket.priority === "medium" ? "🟡" : "🟢"}
+                          </span>
+                          <div>
+                            <div className="font-bold text-lg">{ticket.subject || ticket.message}</div>
+                            <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border-2
+                          ${ticket.status === "resolved"
+                            ? "border-green-500 text-green-700 bg-white"
+                            : "border-gray-500 text-gray-700 bg-white"
+                          }`}>
+                          {ticket.status === "resolved" ? "Resolved" : "Closed"}
+                        </span>
+                      </div>
+                      <div className="text-gray-600 text-sm">{ticket.message}</div>
+                      <div className="flex justify-between items-center mt-2">
+                        <div className="text-xs text-gray-400">
+                          Completed: {new Date(ticket.updatedAt || ticket.createdAt).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/chat/${ticket._id}`)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <EyeIcon className="h-4 w-4 inline-block" />
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <CheckCircleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">No resolved tickets</h4>
+                <p className="text-gray-500">You don't have any resolved or closed tickets yet.</p>
+              </div>
+            )}
+          </div>
+        );
+
       case "notifications":
         return (
           <div className="space-y-6">
@@ -706,11 +1095,10 @@ export default function Dashboard() {
               <TabsList>
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
-                <TabsTrigger value="notifications">Notifications</TabsTrigger>
               </TabsList>
               <TabsContent value="profile" className="space-y-4">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
                     <div>
                       <CardTitle>Profile Information</CardTitle>
                       <CardDescription>
@@ -718,9 +1106,11 @@ export default function Dashboard() {
                       </CardDescription>
                     </div>
                     {!editMode && (
-                      <Button onClick={() => setEditMode(true)}>
-                        Edit Profile
-                      </Button>
+                      <div className="flex justify-end md:justify-start">
+                        <Button onClick={() => setEditMode(true)}>
+                          Edit Profile
+                        </Button>
+                      </div>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -931,47 +1321,6 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              <TabsContent value="notifications" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Notification Preferences</CardTitle>
-                    <CardDescription>
-                      Configure how you receive notifications
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Email Notifications</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Receive notifications about your account activity
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Bell className="h-4 w-4 text-muted-foreground" />
-                          <Input type="checkbox" className="h-4 w-4" defaultChecked disabled />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Ticket Updates</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Receive notifications about ticket status changes
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Bell className="h-4 w-4 text-muted-foreground" />
-                          <Input type="checkbox" className="h-4 w-4" defaultChecked disabled />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button disabled>Save Preferences</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </div>
         );
@@ -1098,7 +1447,9 @@ export default function Dashboard() {
                       if (item.id === 'home' && item.action) {
                         item.action();
                       } else {
-                        setActiveTab(item.id); setShowSidebar(false);
+                        setActiveTab(item.id); 
+                        setShowSidebar(false);
+                        setShowNewTicketForm(false);
                       }
                     }}
                     className={`flex items-center gap-4 px-4 py-3 rounded-xl border font-semibold text-base transition-all duration-200 shadow w-full

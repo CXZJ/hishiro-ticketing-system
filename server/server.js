@@ -66,8 +66,9 @@ app.get('/api/test', (req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Store active ticket rooms
+// Store active ticket rooms and user notification rooms
 const activeTicketRooms = new Map();
+const userNotificationRooms = new Map(); // Map userId to socketId for notifications
 
 // Socket.IO
 io.on('connection', (socket) => {
@@ -83,6 +84,20 @@ io.on('connection', (socket) => {
       text: message,
       time: new Date().toLocaleTimeString()
     });
+  });
+
+  // Handle user joining notification room (for dashboard notifications)
+  socket.on('userJoinNotificationRoom', (userId) => {
+    console.log(`User ${userId} joined notification room with socket ${socket.id}`);
+    userNotificationRooms.set(userId, socket.id);
+    socket.join(`user_notifications_${userId}`);
+  });
+
+  // Handle admin joining notification room (for admin notifications)
+  socket.on('adminJoinNotificationRoom', (adminId) => {
+    console.log(`Admin ${adminId} joined admin notification room with socket ${socket.id}`);
+    socket.join('admin_notifications');
+    console.log(`Admin ${adminId} successfully joined admin_notifications room`);
   });
 
   // Handle ticket creation
@@ -253,6 +268,18 @@ io.on('connection', (socket) => {
         tempId: tempId || null
       });
 
+      // If admin is replying, send notification to user's notification room
+      if (isAdmin && ticket.userId) {
+        const userNotificationRoom = `user_notifications_${ticket.userId}`;
+        io.to(userNotificationRoom).emit('adminReplyToUserTicket', {
+          ticketId: ticketId,
+          ticketSubject: ticket.subject || 'Your Ticket',
+          message: message,
+          time: new Date().toLocaleString()
+        });
+        console.log(`Sent admin reply notification to ${userNotificationRoom}`);
+      }
+
       console.log(`Message broadcasted to room ${ticketRoom}`);
     } catch (error) {
       console.error('Error processing ticket message:', error);
@@ -272,19 +299,78 @@ io.on('connection', (socket) => {
       );
 
       if (updatedTicket) {
+        // Emit to ticket room
         io.to(ticketRoom).emit('ticketStatusUpdated', {
           ticketId,
           status,
           time: new Date().toLocaleTimeString()
         });
+
+        // Send notification to user's notification room
+        if (updatedTicket.userId) {
+          const userNotificationRoom = `user_notifications_${updatedTicket.userId}`;
+          io.to(userNotificationRoom).emit('userTicketStatusUpdated', {
+            ticketId: ticketId,
+            ticketSubject: updatedTicket.subject || 'Your Ticket',
+            status: status,
+            time: new Date().toLocaleString()
+          });
+          console.log(`Sent status update notification to ${userNotificationRoom}`);
+        }
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
     }
   });
 
+  // Handle ticket priority updates
+  socket.on('updateTicketPriority', async (data) => {
+    const { ticketId, priority } = data;
+    const ticketRoom = `ticket_${ticketId}`;
+    
+    try {
+      const updatedTicket = await Ticket.findByIdAndUpdate(
+        ticketId,
+        { priority },
+        { new: true }
+      );
+
+      if (updatedTicket) {
+        // Emit to ticket room
+        io.to(ticketRoom).emit('ticketPriorityUpdated', {
+          ticketId,
+          priority,
+          time: new Date().toLocaleTimeString()
+        });
+
+        // Send notification to user's notification room
+        if (updatedTicket.userId) {
+          const userNotificationRoom = `user_notifications_${updatedTicket.userId}`;
+          io.to(userNotificationRoom).emit('userTicketPriorityUpdated', {
+            ticketId: ticketId,
+            ticketSubject: updatedTicket.subject || 'Your Ticket',
+            priority: priority,
+            time: new Date().toLocaleString()
+          });
+          console.log(`Sent priority update notification to ${userNotificationRoom}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating ticket priority:', error);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    
+    // Clean up user notification rooms
+    for (const [userId, socketId] of userNotificationRooms.entries()) {
+      if (socketId === socket.id) {
+        userNotificationRooms.delete(userId);
+        console.log(`Removed user ${userId} from notification room`);
+        break;
+      }
+    }
     
     // Clean up ticket rooms
     for (const [ticketId, info] of activeTicketRooms.entries()) {
