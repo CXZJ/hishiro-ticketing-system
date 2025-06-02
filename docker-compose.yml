@@ -11,6 +11,7 @@ services:
       MONGO_URI: mongodb://e2425-wads-l4ccg2:chud6spe@10.25.143.17:27017/e2425-wads-l4ccg2?authSource=e2425-wads-l4ccg2
       JWT_SECRET: ${JWT_SECRET}
       FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_SERVICE_ACCOUNT}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
     ports:
       - "3032:3032"
 
