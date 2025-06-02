@@ -45,11 +45,11 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5001',
+        url: 'http://localhost:3032',
         description: 'Development server',
       },
       {
-        url: 'https://api.hishiro.com',
+        url: 'https://e2425-wads-l4ccg2-server.csbihub.id',
         description: 'Production server',
       },
     ],

@@ -7,6 +7,7 @@ import { connectDB } from './config/db.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 import ticketRoutes from './routes/ticketRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 import Ticket from './models/Ticket.js';
 import mongoose from 'mongoose';
 import User from './models/User.js';
@@ -38,7 +39,9 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins in development
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://e2425-wads-l4ccg2-client.csbihub.id', process.env.FRONTEND_URL] 
+      : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3031'],
     methods: ["GET", "POST"]
   }
 });
@@ -46,8 +49,8 @@ const io = new Server(server, {
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    ? ['https://e2425-wads-l4ccg2-client.csbihub.id', process.env.FRONTEND_URL] 
+    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3031'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -70,6 +73,7 @@ app.use((req, res, next) => {
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Test route
 app.get('/api/test', (req, res) => {
