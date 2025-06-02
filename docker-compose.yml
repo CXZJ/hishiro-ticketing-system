@@ -7,19 +7,20 @@ services:
     environment:
       PORT: ${PORT}
       NODE_ENV: ${NODE_ENV}
-      # MONGO_URI: mongodb://e2425-wads-l4ccg2:chud6spe@10.25.143.17:27018/e2425-wads-l4ccg2?authSource=e2425-wads-l4ccg2
-      MONGO_URI: mongodb://e2425-wads-l4ccg2:chud6spe@10.25.143.17:27018/e2425-wads-l4ccg2?authSource=e2425-wads-l4ccg2
+      MONGO_URI: mongodb://e2425-wads-l4ccg2:chud6spe@localhost:27018/e2425-wads-l4ccg2?authSource=e2425-wads-l4ccg2
       JWT_SECRET: ${JWT_SECRET}
       FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_SERVICE_ACCOUNT}
     ports:
       - "3032:3032"
 
   frontend:
+  # Dont forget to put correct image
     image: esojas/hishiro-ticketing-system-frontend:latest
     restart: always
     depends_on:
       - backend
     environment:
+      # TODO: Change this to the correct URL
       VITE_API_URL: ${VITE_API_URL}
       VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY}
     ports:
