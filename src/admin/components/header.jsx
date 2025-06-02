@@ -56,9 +56,10 @@ export function Header({ onMenuClick }) {
 
   return (
     <header className="border-b">
-      <div className="hidden md:flex h-16 items-center px-4 gap-4">
+      <div className="flex h-16 items-center px-4 gap-4">
+        {/* Hamburger menu for mobile only */}
         <button
-          className="md:hidden p-2 rounded hover:bg-gray-200 focus:outline-none"
+          className="block xl:hidden p-2 rounded hover:bg-gray-200 focus:outline-none"
           onClick={onMenuClick}
           aria-label="Open sidebar"
         >

@@ -1,172 +1,90 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Ticket, Users, Settings, BarChart3, MessageSquare, Archive } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, Ticket, Users, Settings, BarChart3, MessageSquare, Archive, X, LogOut } from 'lucide-react'
 import logo from '../../assets/logo.png';
 
-export function Sidebar({ className }) {
-  const location = useLocation()
+export function Sidebar({ className = '', open = false, onClose }) {
+  const navigate = useNavigate();
+  // Menu items
+  const mainMenu = [
+    { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/admin/tickets', icon: Ticket, label: 'All Tickets' },
+    { to: '/admin/tickets?status=open', icon: MessageSquare, label: 'Open Tickets' },
+    { to: '/admin/tickets?status=resolved', icon: Archive, label: 'Resolved' },
+    { to: '/admin/users', icon: Users, label: 'Users' },
+  ];
+  const managementMenu = [
+    { to: '/admin/agents', icon: Users, label: 'Admins' },
+    { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/admin/settings', icon: Settings, label: 'Settings' },
+  ];
 
-  const isActive = (path) => {
-    if (path === '/admin') {
-      return location.pathname === path
-    }
-    if (path.includes('?')) {
-      const [pathname, search] = path.split('?')
-      return location.pathname === pathname && location.search === `?${search}`
-    }
-    if (path === '/admin/tickets') {
-      return location.pathname === path && !location.search
-    }
-    return location.pathname.startsWith(path)
-  }
-
-  return (
-    <>
-      {/* Top bar for mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden bg-white border-t shadow-lg justify-around items-center h-16">
-        <Link to="/admin">
-          <Button variant={isActive('/admin') ? "secondary" : "ghost"} size="icon">
-            <LayoutDashboard className="h-5 w-5" />
-          </Button>
-        </Link>
-        <Link to="/admin/tickets">
-          <Button variant={isActive('/admin/tickets') ? "secondary" : "ghost"} size="icon">
-            <Ticket className="h-5 w-5" />
-          </Button>
-        </Link>
-        <Link to="/admin/analytics">
-          <Button variant={isActive('/admin/analytics') ? "secondary" : "ghost"} size="icon">
-            <BarChart3 className="h-5 w-5" />
-          </Button>
-        </Link>
-        <Link to="/admin/users">
-          <Button variant={isActive('/admin/users') ? "secondary" : "ghost"} size="icon">
-            <Users className="h-5 w-5" />
-          </Button>
-        </Link>
-        <Link to="/admin/settings">
-          <Button variant={isActive('/admin/settings') ? "secondary" : "ghost"} size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
-        </Link>
-      </nav>
-      {/* Sidebar for desktop */}
-      <div className={cn("hidden md:flex pb-12 w-64 flex-col border-r bg-white", className)}>
-        <div className="flex flex-col items-center py-6">
-          <Link to="/admin">
-            <img src={logo} alt="Logo" className="h-10 mb-4 drop-shadow-xl" />
-          </Link>
-        </div>
-        <div className="space-y-4 py-4">
-          <div className="px-3 py-2">
-            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Support Admin</h2>
-            <div className="space-y-1">
-              <Link to="/admin">
-                <Button 
-                  variant={isActive('/admin') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Dashboard
-                </Button>
-              </Link>
-              <Link to="/admin/tickets">
-                <Button 
-                  variant={isActive('/admin/tickets') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin/tickets') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <Ticket className="mr-2 h-4 w-4" />
-                  All Tickets
-                </Button>
-              </Link>
-              <Link to="/admin/tickets?status=open">
-                <Button 
-                  variant={isActive('/admin/tickets?status=open') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin/tickets?status=open') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Open Tickets
-                </Button>
-              </Link>
-              <Link to="/admin/tickets?status=resolved">
-                <Button 
-                  variant={isActive('/admin/tickets?status=resolved') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin/tickets?status=resolved') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <Archive className="mr-2 h-4 w-4" />
-                  Resolved
-                </Button>
-              </Link>
-              <Link to="/admin/users">
-                <Button 
-                  variant={isActive('/admin/users') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin/users') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Users
-                </Button>
-              </Link>
-            </div>
-          </div>
-          <div className="px-3 py-2">
-            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Management</h2>
-            <div className="space-y-1">
-              <Link to="/admin/agents">
-                <Button 
-                  variant={isActive('/admin/agents') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin/agents') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Admins
-                </Button>
-              </Link>
-              <Link to="/admin/analytics">
-                <Button 
-                  variant={isActive('/admin/analytics') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin/analytics') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  Analytics
-                </Button>
-              </Link>
-              <Link to="/admin/settings">
-                <Button 
-                  variant={isActive('/admin/settings') ? "secondary" : "ghost"} 
-                  className={cn(
-                    "w-full justify-start transition-colors",
-                    isActive('/admin/settings') ? "bg-secondary" : "hover:bg-secondary/50"
-                  )}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
+  // Sidebar content
+  const sidebarContent = (
+    <div
+      className={cn(
+        `fixed z-50 top-0 left-0 h-full w-56 bg-white shadow-lg transition-transform duration-300
+        ${open ? 'translate-x-0' : '-translate-x-full'} xl:static xl:z-auto xl:h-auto xl:w-64 xl:border-r xl:bg-white flex flex-col xl:translate-x-0`,
+        className
+      )}
+      style={{ maxWidth: '100vw' }}
+    >
+      {/* Mobile: Close button and logo */}
+      <div className="flex items-center justify-between py-4 xl:hidden px-4">
+        <img src={logo} alt="Logo" className="h-10 drop-shadow-xl" />
+        <button
+          className="p-2 rounded hover:bg-gray-200 focus:outline-none ml-2"
+          onClick={onClose}
+          aria-label="Close sidebar"
+        >
+          <X className="h-7 w-7 text-gray-700" />
+        </button>
       </div>
-    </>
-  )
+      {/* Desktop: Logo */}
+      <div className="hidden xl:flex flex-col items-center py-4">
+        <img src={logo} alt="Logo" className="h-12 drop-shadow-xl mb-2" />
+      </div>
+      <nav className="flex-1 flex flex-col gap-8 mt-2 px-2 xl:px-4">
+        <div>
+          <h2 className="mb-3 px-2 text-xs font-semibold tracking-widest text-gray-400 uppercase">Support Admin</h2>
+          <div className="flex flex-col gap-1">
+            {mainMenu.map((item) => (
+              <Link to={item.to} key={item.to} className="mx-0">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-base transition-all duration-200 hover:bg-black hover:text-white cursor-pointer">
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h2 className="mb-3 px-2 text-xs font-semibold tracking-widest text-gray-400 uppercase">Management</h2>
+          <div className="flex flex-col gap-1">
+            {managementMenu.map((item) => (
+              <Link to={item.to} key={item.to} className="mx-0">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-base transition-all duration-200 hover:bg-black hover:text-white cursor-pointer">
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </nav>
+      {/* Logout button at the bottom */}
+      <div className="mt-auto mb-2 xl:mb-0 px-4">
+        <button
+          onClick={() => { navigate('/admin/login'); }}
+          className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-white border border-red-500 hover:bg-red-500/80 hover:scale-105 transition-all duration-200 px-4 py-3 rounded-xl font-semibold text-base shadow bg-white"
+        >
+          <LogOut className="h-5 w-5" />
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  return <>{sidebarContent}</>;
 } 
