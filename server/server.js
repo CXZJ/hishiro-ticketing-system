@@ -76,6 +76,25 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
 });
 
+// Root route - redirect to Swagger docs
+app.get('/', (req, res) => {
+  res.redirect('/api-docs');
+});
+
+// Health check route
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Hishiro Ticketing System API is running',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      'swagger': '/api-docs',
+      'api': '/api',
+      'health': '/health'
+    }
+  });
+});
+
 // Error handler
 app.use(errorHandler);
 
@@ -409,10 +428,12 @@ io.on('connection', (socket) => {
 // Expose io instance on app for use in routes
 app.set('io', io);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3032;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API Documentation available at: http://localhost:${PORT}/api-docs`);
+  console.log(`Health check available at: http://localhost:${PORT}/health`);
   console.log('Available routes:');
   console.log('- GET /api/admin/check');
   console.log('- POST /api/admin/set-admin/:uid');
