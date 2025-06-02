@@ -69,7 +69,7 @@ export default function Login() {
       const user = await signInWithGoogle(); // returns the Firebase user object
 
       // Sends user profile to backend
-      await fetch('http://localhost:5001/api/users', {
+      await fetch('http://localhost:5000/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

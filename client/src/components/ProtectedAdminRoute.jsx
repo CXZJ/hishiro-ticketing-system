@@ -20,7 +20,7 @@ export default function ProtectedAdminRoute({ children }) {
 
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         const url = new URL('/api/admin/check', API_URL).toString();
         console.log('Checking admin status at:', url);
         

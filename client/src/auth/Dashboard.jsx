@@ -106,7 +106,7 @@ export default function Dashboard() {
     const checkAdmin = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5001").replace(/\/+$/, "");
+        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
         const url = new URL('/api/admin/check', API_URL).toString();
         const response = await fetch(url, {
           headers: {
@@ -131,7 +131,7 @@ export default function Dashboard() {
     const getToken = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5001").replace(/\/+$/, "");
+        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
         
         // Fetch user's tickets
         const ticketsRes = await fetch(`${API_URL}/api/tickets/user`, {
@@ -195,7 +195,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const socket = io(API_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -412,7 +412,7 @@ export default function Dashboard() {
     setSubmitting(true);
     try {
       const token = await user.getIdToken();
-      const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5001").replace(/\/+$/, "");
+      const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
       const res = await fetch(`${API_URL}/api/tickets`, {
         method: 'POST',
         headers: {

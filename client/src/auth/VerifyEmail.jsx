@@ -4,7 +4,7 @@ import { auth } from '../firebase';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { sendEmailVerification } from "firebase/auth";
 
-const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "http://localhost:5001";
+const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "http://localhost:5000";
 
 const VerifyEmail = () => {
   const [user, loading] = useAuthState(auth);

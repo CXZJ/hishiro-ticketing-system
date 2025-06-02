@@ -119,7 +119,7 @@ export default function TicketChat() {
   // Real-time updates with Socket.IO
   useEffect(() => {
     if (!user) return;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const sock = io(API_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -316,7 +316,7 @@ export default function TicketChat() {
     const checkAdmin = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         const url = new URL('/api/admin/check', API_URL).toString();
         const response = await fetch(url, {
           headers: {

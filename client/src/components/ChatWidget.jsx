@@ -35,7 +35,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
     // Only connect to socket if not in full page mode (where socket might be handled differently)
     // Or if in full page mode and we have a ticketId (meaning an existing chat)
     if (!fullPage || (fullPage && ticketId)) {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       const sock = io(API_URL, {
         reconnectionAttempts: 3,
         reconnectionDelay: 1000,
