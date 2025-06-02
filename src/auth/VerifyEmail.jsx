@@ -14,12 +14,14 @@ const VerifyEmail = () => {
   const postedRef = useRef(false);
   const [status, setStatus] = useState({ loading: true, error: '', success: '' });
   const [emailVerified, setEmailVerified] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [hasResent, setHasResent] = useState(false);
 
   useEffect(() => {
     setEmailVerified(user?.emailVerified ?? false);
   }, [user]);
 
-  // Poll for verification if not verified
+  // Polling (Automated repeated checks) for email verification
   useEffect(() => {
     let intervalId;
     const checkVerification = async () => {
@@ -34,7 +36,7 @@ const VerifyEmail = () => {
     return () => clearInterval(intervalId);
   }, [user, emailVerified]);
 
-  // Save to MongoDB when verified 
+  // Save to mongoDB when verified 
   useEffect(() => {
     const saveVerifiedUser = async () => {
       if (!loading && emailVerified && !postedRef.current && form.current.username) {
@@ -69,6 +71,14 @@ const VerifyEmail = () => {
     saveVerifiedUser();
   }, [emailVerified, loading, navigate]);
 
+  // Timer for resend button
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
   const resendVerification = async () => {
     setStatus(prev => ({ ...prev, loading: true }));
     try {
@@ -76,10 +86,20 @@ const VerifyEmail = () => {
         url: `${window.location.origin}/verify-email`
       });
       setStatus({ loading: false, error: '', success: 'New verification email sent!' });
+      setHasResent(true);
+      setCooldown(60); // Start cooldown after first resend
     } catch (error) {
       setStatus({ loading: false, error: error.message, success: '' });
+      setHasResent(true);
+      setCooldown(60); // Start cooldown again to prevent spam
     }
   };
+
+  useEffect(() => {
+    if (!loading && !status.success && !status.error) {
+      setStatus(prev => ({ ...prev, loading: false }));
+    }
+  }, [loading]);
 
   if (!form.current.username) {
     useEffect(() => {
@@ -115,9 +135,11 @@ const VerifyEmail = () => {
       <button 
         onClick={resendVerification}
         className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-        disabled={status.loading}
+        disabled={status.loading || (hasResent && cooldown > 0)}
       >
-        Resend Verification Email
+        {hasResent && cooldown > 0
+          ? `Resend in ${cooldown}s`
+          : 'Resend Verification Email'}
       </button>
     </div>
   );

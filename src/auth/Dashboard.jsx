@@ -1549,4 +1549,29 @@ export default function Dashboard() {
       )}
     </div>
   );
-} 
+}
+
+/* function validateProfile(form) {
+  const errs = {};
+  if (!form.username) {
+    errs.username = 'Username is required';
+  } else if (form.username.length < 3) {
+    errs.username = 'Username must be at least 3 characters';
+  }
+
+  if (!form.gender) errs.gender = 'Gender is required';
+
+  if (!form.phone) {
+    errs.phone = 'Phone is required';
+  } else if (!/^\d{8,15}$/.test(form.phone)) {
+    errs.phone = 'Phone must be 8-15 digits';
+  }
+
+  if (!form.address) {
+    errs.address = 'Address is required';
+  } else if (form.address.length < 5) {
+    errs.address = 'Address must be at least 5 characters';
+  }
+
+  return errs;
+} */

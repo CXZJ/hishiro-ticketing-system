@@ -15,7 +15,7 @@ const registerFirebaseUser = async (req, res) => {
   }
 
   try {
-    // Check if user already exists
+    // Check if user already exists by user ID
     const userExists = await User.findOne({ uid });
     if (userExists) {
       console.log('User already exists:', userExists);
@@ -25,6 +25,16 @@ const registerFirebaseUser = async (req, res) => {
       });
     }
 
+    // Check if phone number already exists
+    if (phone) { 
+      const phoneExists = await User.findOne({ phone });
+      console.log('Checking phone number:', phone, 'Exists:', phoneExists);
+      if (phoneExists) {
+        return res.status(400).json({ 
+          message: 'Phone number already in use.' 
+        });
+      }
+    }
     // Create user
     const user = new User({ uid, email, username, gender, phone, address, authProvider });
     const savedUser = await user.save();

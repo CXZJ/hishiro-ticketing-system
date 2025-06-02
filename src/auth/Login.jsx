@@ -12,6 +12,7 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
   const [user, loading, error] = useAuthState(auth);
   const [isAdmin, setIsAdmin] = useState(null);
+  const [apiError, setApiError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,11 +47,20 @@ export default function Login() {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    setApiError('');
     try {
       await logInWithEmailAndPassword(email, password);
       navigate(from); // Redirect to the attempted URL or dashboard
     } catch (err) {
-      alert(err.message);
+      let msg = err.message;
+      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+        msg = "Incorrect email or password.";
+      } else if (err.code === "auth/user-not-found") {
+        msg = "No account found with this email.";
+      } else if (err.code === "auth/too-many-requests") {
+        msg = "Too many failed attempts. Please try again later.";
+      }
+      setApiError(msg);
     }
   };
 
@@ -73,7 +83,7 @@ export default function Login() {
         })
       });
 
-      navigate(from); // Redirect to the attempted URL or dashboard
+      navigate(from); // redirects user to the attempted URL or dashboard
     } catch (err) {
       setApiError(err.message);
     }
@@ -103,6 +113,8 @@ export default function Login() {
         <h2 className="text-center text-2xl font-semibold mb-6">
           Login to Account
         </h2>
+
+        {apiError && <div className="text-red-600 text-sm mb-4">{apiError}</div>}
 
         <label className="block mb-1 text-sm font-medium">Email address</label>
         <input

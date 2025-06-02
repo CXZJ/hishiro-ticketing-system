@@ -24,13 +24,41 @@ export default function SignUp() {
 
   const validate = () => {
     const errs = {};
-    if (!form.email)    errs.email    = 'Email is required';
-    if (!form.username) errs.username = 'Username is required';
-    if (!form.gender)   errs.gender   = 'Gender is required';
-    if (!form.phone)    errs.phone    = 'Phone is required';
-    if (!form.address)  errs.address  = 'Address is required';
-    if (!form.password) errs.password = 'Password is required';
-    if (!form.agree)    errs.agree    = 'You must accept terms';
+    if (!form.email) {
+      errs.email = 'Email is required';
+    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,5}$/.test(form.email)) {
+      errs.email = 'Invalid email format';
+    }
+
+    if (!form.username) {
+      errs.username = 'Username is required';
+    } else if (form.username.length < 3) {
+      errs.username = 'Username must be at least 3 characters';
+    }
+
+    if (!form.gender) errs.gender = 'Gender is required';
+
+    if (!form.phone) {
+      errs.phone = 'Phone is required';
+    } else if (!/^\d{8,15}$/.test(form.phone)) {
+      errs.phone = 'Phone must be 8-15 digits';
+    }
+
+    if (!form.address) {
+      errs.address = 'Address is required';
+    } else if (form.address.length < 5) {
+      errs.address = 'Address must be at least 5 characters';
+    }
+
+    if (!form.password) {
+      errs.password = 'Password is required';
+    } else if (form.password.length < 8) {
+      errs.password = 'Password must be at least 8 characters';
+    } else if (!/\d/.test(form.password)) {
+      errs.password = 'Password must include at least one number';
+    }
+
+    if (!form.agree) errs.agree = 'You must accept terms';
     return errs;
   };
 
@@ -50,7 +78,13 @@ export default function SignUp() {
       await updateProfile(user, { displayName: form.username });
       navigate('/verify-email', { state: { ...form } }); // Send form data to /verify-email
   } catch (err) {
-    setApiError(err.message);
+    let msg = err.message;
+    if (err.code === "auth/email-already-in-use") {
+      msg = "This email is already registered. Please log in or use another email.";
+    } else if (err.code === "auth/invalid-email") { // delete later
+      msg = "Please enter a valid email address.";
+    } 
+    setApiError(msg);
   } finally {
     setLoading(false);
   }
