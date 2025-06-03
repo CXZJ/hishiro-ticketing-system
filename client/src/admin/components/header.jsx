@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu"
-import { Bell, Search, Shield, Settings, LogOut, Menu } from 'lucide-react'
+import { Bell, Search, Shield, Settings, LogOut, Menu, ChevronDown, User } from 'lucide-react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth } from '../../firebase'
 import { signOut } from 'firebase/auth'
@@ -21,7 +21,7 @@ import NotificationBell from '../../components/NotificationBell'
 import { useNotifications } from '../../contexts/NotificationContext'
 import logo from '../../assets/logo.png';
 import { io } from 'socket.io-client'
-import { getSocketUrl } from '../../config/api'
+import { getSocketUrl, API_URL } from '../../config/api'
 
 export function Header({ onMenuClick }) {
   const [user] = useAuthState(auth)
@@ -35,7 +35,7 @@ export function Header({ onMenuClick }) {
       if (!user) return
       try {
         const token = await user.getIdToken()
-        const res = await fetch('/api/users/me', {
+        const res = await fetch(`${API_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (!res.ok) throw new Error('Failed to fetch profile')

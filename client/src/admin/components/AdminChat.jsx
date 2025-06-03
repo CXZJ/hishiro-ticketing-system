@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
+import { API_URL } from '../../config/api';
 
 export default function AdminChat() {
   const [message, setMessage] = useState('');
@@ -15,7 +16,6 @@ export default function AdminChat() {
   const [user] = useAuthState(auth);
 
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     const newSocket = io(API_URL);
     setSocket(newSocket);
 
@@ -171,7 +171,6 @@ export default function AdminChat() {
     if (socket && selectedTicket) {
       try {
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         const res = await fetch(`${API_URL}/api/tickets/${selectedTicket._id}`, {
           method: 'PUT',
           headers: {

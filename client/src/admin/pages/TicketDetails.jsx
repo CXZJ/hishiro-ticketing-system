@@ -10,6 +10,7 @@ import {
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
 import { io } from 'socket.io-client';
+import { API_URL } from '../../config/api';
 
 export default function TicketDetails() {
   const { id } = useParams();
@@ -30,7 +31,7 @@ export default function TicketDetails() {
     const fetchTicket = async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(`/api/tickets/${id}`, {
+        const res = await fetch(`${API_URL}/api/tickets/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -56,7 +57,7 @@ export default function TicketDetails() {
     const fetchMessages = async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(`/api/tickets/${id}/messages`, {
+        const res = await fetch(`${API_URL}/api/tickets/${id}/messages`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -79,7 +80,6 @@ export default function TicketDetails() {
   // Real-time updates with Socket.IO
   useEffect(() => {
     if (!user) return;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const sock = io(API_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -180,7 +180,7 @@ export default function TicketDetails() {
     setSending(true);
     try {
       const token = await user.getIdToken();
-      const res = await fetch(`/api/tickets/${id}/messages`, {
+      const res = await fetch(`${API_URL}/api/tickets/${id}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

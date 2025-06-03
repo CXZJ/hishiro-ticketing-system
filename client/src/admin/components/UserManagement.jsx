@@ -3,6 +3,9 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Mail, Phone, Clock, CheckCircle, Users, MessageSquare, MapPin, User, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { API_URL } from '../../config/api';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -16,7 +19,6 @@ export default function UserManagement() {
     const fetchUsers = async () => {
       try {
         const token = await user.getIdToken();
-        const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
         const res = await fetch(`${API_URL}/api/admin/users`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -69,7 +71,6 @@ export default function UserManagement() {
 
     try {
       const token = await user.getIdToken();
-      const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/+$/, "");
       console.log('Making DELETE request to:', `${API_URL}/api/admin/users/${userId}`);
       
       const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
