@@ -4,12 +4,25 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Initialize the Gemini API
+// Initialize the Gemini API with proper error handling
 const getGeminiAPI = () => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('Gemini API key is not configured in server environment');
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === '${GEMINI_API_KEY}' || apiKey.trim() === '') {
+    console.log('Gemini API key not properly configured');
+    return null;
   }
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  try {
+    return new GoogleGenerativeAI(apiKey);
+  } catch (error) {
+    console.error('Error initializing Gemini API:', error);
+    return null;
+  }
+};
+
+// Check if Gemini API is available
+const isGeminiAvailable = () => {
+  const genAI = getGeminiAPI();
+  return genAI !== null;
 };
 
 // Company information for context
@@ -38,31 +51,78 @@ Guidelines:
 - Stay in character as a Hishiro.id support representative`
 };
 
-// Retry utility function
-const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      console.log(`Attempt ${i + 1} failed:`, error.message);
-      
-      const isRetryable = 
-        error.message.includes('503') || 
-        error.message.includes('overloaded') ||
-        error.message.includes('429') ||
-        error.message.includes('rate limit') ||
-        error.message.includes('network') ||
-        error.message.includes('timeout');
-      
-      if (!isRetryable || i === maxRetries - 1) {
-        throw error;
-      }
-      
-      const delay = baseDelay * Math.pow(2, i);
-      console.log(`Retrying in ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
+// Simple rule-based responses when Gemini is not available
+const getSimpleResponse = (userMessage) => {
+  const message = userMessage.toLowerCase();
+  
+  // Greetings
+  if (message.includes('hello') || message.includes('hi') || message.includes('hey') || message === '' || message.includes('help')) {
+    return {
+      text: "Hello! Welcome to Hishiro.id! I'm here to help you with our anime-inspired streetwear and accessories. How can I assist you today? Whether you're looking for the perfect anime tee, need sizing help, or have questions about your order, I'm here to help!",
+      needsTicket: false
+    };
   }
+  
+  // Product inquiries
+  if (message.includes('product') || message.includes('shirt') || message.includes('hoodie') || message.includes('merchandise') || message.includes('anime')) {
+    return {
+      text: "Awesome! You're interested in our anime-inspired collection! 🎌 We have amazing t-shirts, hoodies, and accessories featuring popular anime designs. For detailed product information, sizing charts, and current availability, I'd be happy to create a support ticket so our team can provide you with complete product details and help you find the perfect items!",
+      needsTicket: true,
+      subject: "Product Information Request"
+    };
+  }
+  
+  // Order inquiries
+  if (message.includes('order') || message.includes('delivery') || message.includes('shipping') || message.includes('track')) {
+    return {
+      text: "I can help you with order-related questions! 📦 Whether you need to track a shipment, check order status, or have questions about delivery, our support team can provide you with detailed information. Let me create a support ticket for you so our team can look up your specific order details.",
+      needsTicket: true,
+      subject: "Order & Shipping Inquiry"
+    };
+  }
+  
+  // Sizing questions
+  if (message.includes('size') || message.includes('fit') || message.includes('measurement')) {
+    return {
+      text: "Great question about sizing! 📏 Getting the perfect fit is super important for our anime streetwear. Our sizing can vary between different product lines and styles. I'd love to help you get the exact measurements and sizing recommendations - let me create a support ticket so our team can provide you with detailed sizing charts and personalized fit advice!",
+      needsTicket: true,
+      subject: "Sizing & Fit Assistance"
+    };
+  }
+  
+  // Returns/refunds
+  if (message.includes('return') || message.includes('refund') || message.includes('exchange') || message.includes('wrong size')) {
+    return {
+      text: "I understand you need help with a return or exchange! 🔄 We want to make sure you're completely happy with your Hishiro.id purchase. Our return policy and process can vary depending on the item and timing. Let me create a support ticket so our team can review your specific situation and guide you through the return process.",
+      needsTicket: true,
+      subject: "Return & Exchange Request"
+    };
+  }
+  
+  // Payment issues
+  if (message.includes('payment') || message.includes('card') || message.includes('billing') || message.includes('charge')) {
+    return {
+      text: "I can help you with payment-related concerns! 💳 Whether it's about payment methods, billing questions, or transaction issues, our team can assist you. For security and privacy reasons, let me create a support ticket so our team can safely help you with your payment inquiry.",
+      needsTicket: true,
+      subject: "Payment & Billing Support"
+    };
+  }
+  
+  // General long messages that might need human help
+  if (message.length > 100) {
+    return {
+      text: "Thank you for providing detailed information about your inquiry! 📝 I can see you have a specific question or situation that would benefit from personalized assistance from our support team. Let me create a support ticket so our team can give you the detailed attention your inquiry deserves.",
+      needsTicket: true,
+      subject: "Detailed Customer Inquiry"
+    };
+  }
+  
+  // Default response
+  return {
+    text: "Thank you for reaching out to Hishiro.id! 🌟 I'm here to help with questions about our anime-inspired streetwear, orders, sizing, returns, and more. Could you tell me a bit more about what you need help with? Or if you prefer, I can create a support ticket so our team can assist you directly!",
+    needsTicket: true,
+    subject: "General Support Request"
+  };
 };
 
 // Check if response indicates need for ticket
@@ -86,21 +146,19 @@ const shouldCreateTicket = (response) => {
 // Generate subject for ticket
 const generateSubject = async (message, genAI) => {
   try {
-    return await retryWithBackoff(async () => {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      
-      const prompt = `Given the following customer support message, generate a concise and descriptive subject line (maximum 100 characters) that summarizes the main issue. The subject should be clear and professional, suitable for a support ticket.
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    
+    const prompt = `Given the following customer support message, generate a concise and descriptive subject line (maximum 100 characters) that summarizes the main issue. The subject should be clear and professional, suitable for a support ticket.
 
 Message: "${message}"
 
 Generate only the subject line, nothing else.`;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const subject = response.text().trim();
-      
-      return subject.length > 100 ? subject.substring(0, 97) + '...' : subject;
-    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const subject = response.text().trim();
+    
+    return subject.length > 100 ? subject.substring(0, 97) + '...' : subject;
   } catch (error) {
     console.error("Error generating subject:", error);
     const firstSentence = message.split(/[.!?]/)[0].trim();
@@ -109,46 +167,11 @@ Generate only the subject line, nothing else.`;
   }
 };
 
-// Fallback responses
-const getFallbackResponse = (userMessage) => {
-  const message = userMessage.toLowerCase();
-  
-  if (message.includes('order') || message.includes('delivery') || message.includes('shipping')) {
-    return {
-      text: "I understand you have a question about orders or shipping. While our AI assistant is temporarily unavailable, I can help you create a support ticket for our team to assist you with order-related inquiries.",
-      needsTicket: true,
-      subject: "Order/Shipping Inquiry"
-    };
-  }
-  
-  if (message.includes('return') || message.includes('refund') || message.includes('exchange')) {
-    return {
-      text: "I see you need help with returns or refunds. Our AI is currently busy, but I can create a support ticket for our team to help you with your return/refund request.",
-      needsTicket: true,
-      subject: "Return/Refund Request"
-    };
-  }
-  
-  if (message.includes('product') || message.includes('item') || message.includes('size')) {
-    return {
-      text: "I notice you have questions about our products. While our AI assistant is temporarily overloaded, I can help you submit a support ticket for detailed product information.",
-      needsTicket: true,
-      subject: "Product Inquiry"
-    };
-  }
-  
-  return {
-    text: "Hello! I'm currently experiencing high traffic and might be a bit slow to respond. I'm here to help with questions about Hishiro.id's anime-inspired streetwear and accessories. If you need immediate assistance, I can create a support ticket for our team to help you directly.",
-    needsTicket: true,
-    subject: "General Support Request"
-  };
-};
-
 /**
  * @swagger
  * /api/chat/generate-response:
  *   post:
- *     summary: Generate chatbot response using Gemini AI
+ *     summary: Generate chatbot response
  *     tags: [Chat]
  *     security:
  *       - bearerAuth: []
@@ -168,12 +191,11 @@ const getFallbackResponse = (userMessage) => {
  *                   properties:
  *                     from:
  *                       type: string
- *                       enum: [user, bot]
+ *                       enum: [user, support]
  *                     text:
  *                       type: string
- *                     timestamp:
+ *                     type:
  *                       type: string
- *                       format: date-time
  *     responses:
  *       200:
  *         description: Bot response generated successfully
@@ -198,41 +220,56 @@ router.post('/generate-response', protect, async (req, res) => {
     const { messages } = req.body;
     
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ message: 'Messages array is required' });
+      return res.status(400).json({ 
+        message: 'Messages array is required',
+        text: "I need some input to help you! Please tell me what you need assistance with.",
+        needsTicket: false
+      });
     }
 
-    const genAI = getGeminiAPI();
-    
-    // Format chat history
-    const chatHistory = messages.map(msg => ({
-      role: msg.from === "user" ? "user" : "model",
-      parts: [{ text: msg.text }]
-    }));
+    const lastUserMessage = messages[messages.length - 1];
+    if (!lastUserMessage || lastUserMessage.from !== 'user') {
+      return res.status(400).json({ 
+        message: 'Last message must be from user',
+        text: "I need a message from you to respond to! How can I help you today?",
+        needsTicket: false
+      });
+    }
 
-    // Generate response with retry logic
-    const result = await retryWithBackoff(async () => {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      
-      const chat = model.startChat({
-        history: [
-          {
-            role: "user",
-            parts: [{ text: companyInfo.chatbotContext + "\n\nIf you cannot resolve the user's issue or if it requires human intervention, please first ask them to describe their problem in detail. Only after they provide a detailed description, indicate that a ticket should be created by including the phrase 'create a ticket' in your response." }]
-          },
-          {
-            role: "model", 
-            parts: [{ text: "I understand. I am a customer support assistant for Hishiro.id and will help users with their inquiries about our anime-inspired streetwear and accessories. If I cannot resolve an issue, I will first ask for a detailed problem description before suggesting ticket creation." }]
-          },
-          ...chatHistory.slice(0, -1)
-        ],
+    // Check if Gemini is available
+    if (!isGeminiAvailable()) {
+      console.log('Gemini API not available, using simple responses');
+      const response = getSimpleResponse(lastUserMessage.text);
+      return res.json(response);
+    }
+
+    // Try to use Gemini API
+    try {
+      const genAI = getGeminiAPI();
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-pro",  // Use a more stable model
         generationConfig: {
           maxOutputTokens: 1000,
           temperature: 0.7,
-        },
+        }
       });
 
-      const lastMessage = messages[messages.length - 1];
-      const result = await chat.sendMessage(lastMessage.text);
+      // Format conversation history for Gemini
+      const conversationHistory = messages
+        .slice(-10) // Keep last 10 messages for context
+        .map(msg => `${msg.from === 'user' ? 'Customer' : 'Assistant'}: ${msg.text}`)
+        .join('\n');
+
+      const prompt = `${companyInfo.chatbotContext}
+
+Previous conversation:
+${conversationHistory}
+
+Customer: ${lastUserMessage.text}
+
+Please respond as a helpful Hishiro.id customer support assistant. If the customer's issue seems complex or requires human intervention, suggest that they might benefit from creating a support ticket by mentioning "create a ticket" in your response.`;
+
+      const result = await model.generateContent(prompt);
       const response = await result.response;
       const responseText = response.text();
       
@@ -250,43 +287,39 @@ router.post('/generate-response', protect, async (req, res) => {
           .filter(msg => msg.from === "user" && msg.text.length > 50)
           .map(msg => msg.text)
           .join("\n\n");
-        subject = await generateSubject(problemDescription, genAI);
+        
+        // Simple subject generation since Gemini might not be working well
+        const firstSentence = problemDescription.split(/[.!?]/)[0].trim();
+        subject = firstSentence.length > 0 && firstSentence.length <= 100 
+          ? firstSentence 
+          : problemDescription.substring(0, 97) + '...';
       }
       
-      return {
+      return res.json({
         text: responseText,
         needsTicket: needsTicket && hasProblemDescription,
         subject
-      };
-    }, 3, 2000);
-
-    res.json(result);
+      });
+      
+    } catch (geminiError) {
+      console.error("Error with Gemini API:", geminiError);
+      
+      // Fallback to simple responses if Gemini fails
+      const fallbackResponse = getSimpleResponse(lastUserMessage.text);
+      return res.json(fallbackResponse);
+    }
 
   } catch (error) {
     console.error("Error generating bot response:", error);
     
     const lastUserMessage = req.body.messages?.[req.body.messages.length - 1]?.text || "";
+    const fallbackResponse = getSimpleResponse(lastUserMessage);
     
-    if (error.message.includes("API key") || error.message.includes("not configured")) {
-      return res.status(500).json({
-        text: "I apologize, but there's a configuration issue with the chatbot. Please contact the administrator or create a support ticket for assistance.",
-        needsTicket: true,
-        subject: "Chatbot Configuration Issue"
-      });
-    } else if (error.message.includes("quota") || error.message.includes("limit")) {
-      return res.status(429).json({
-        text: "I'm currently experiencing high demand and have reached my response limit. Please try again in a few minutes, or I can create a support ticket for immediate assistance.",
-        needsTicket: true,
-        subject: "Chatbot Service Limit Reached"
-      });
-    } else {
-      const fallbackResponse = getFallbackResponse(lastUserMessage);
-      return res.status(500).json({
-        text: `I'm temporarily having trouble processing requests. ${fallbackResponse.text}`,
-        needsTicket: fallbackResponse.needsTicket,
-        subject: fallbackResponse.subject
-      });
-    }
+    return res.status(500).json({
+      text: `I'm temporarily having trouble processing requests. ${fallbackResponse.text}`,
+      needsTicket: fallbackResponse.needsTicket,
+      subject: fallbackResponse.subject
+    });
   }
 });
 
