@@ -122,7 +122,7 @@ export default function Analytics() {
 
   // Calculate advanced stats
   const total = tickets.length;
-  const open = tickets.filter(t => t.status === "new" || t.status === "open").length;
+  const open = tickets.filter(t => t.status === "open").length;
   const resolved = tickets.filter(t => t.status === "resolved").length;
   const inProgress = tickets.filter(t => t.status === "in-progress").length;
   const highPriority = tickets.filter(t => t.priority?.toLowerCase() === "high").length;

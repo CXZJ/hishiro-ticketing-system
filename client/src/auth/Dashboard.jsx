@@ -366,7 +366,7 @@ export default function Dashboard() {
   // Initialize stats with empty array if tickets is not an array
   const stats = {
     total: Array.isArray(tickets) ? tickets.length : 0,
-    open: Array.isArray(tickets) ? tickets.filter((t) => t.status === "new").length : 0,
+    open: Array.isArray(tickets) ? tickets.filter((t) => t.status === "open").length : 0,
     inProgress: Array.isArray(tickets) ? tickets.filter((t) => t.status === "in-progress").length : 0,
     resolved: Array.isArray(tickets) ? tickets.filter((t) => t.status === "resolved").length : 0,
   };
@@ -540,7 +540,7 @@ export default function Dashboard() {
                           {ticket.status === "resolved" ? "Resolved"
                             : ticket.status === "in-progress" ? "In Progress"
                             : ticket.status === "closed" ? "Closed"
-                            : "New"}
+                            : "Open"}
                         </span>
                       </div>
                       <div className="text-gray-600 text-sm">{ticket.message}</div>
@@ -705,13 +705,13 @@ export default function Dashboard() {
         );
 
       case "open-tickets":
-        const openTickets = tickets.filter(ticket => ticket.status === "new");
+        const openTickets = tickets.filter(ticket => ticket.status === "open");
         return (
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
               <div>
                 <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">Open Tickets</div>
-                <p className="text-gray-500">New tickets that need attention</p>
+                <p className="text-gray-500">Open tickets that need attention</p>
               </div>
             </div>
             
@@ -761,8 +761,8 @@ export default function Dashboard() {
                             <div className="text-xs text-gray-400">Ticket #{ticket._id.substring(0, 8)}</div>
                           </div>
                         </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-bold border-2 border-purple-500 text-purple-700 bg-white">
-                          New
+                        <span className="px-3 py-1 rounded-full text-xs font-bold border-2 border-blue-500 text-blue-700 bg-white">
+                          Open
                         </span>
                       </div>
                       <div className="text-gray-600 text-sm">{ticket.message}</div>

@@ -42,7 +42,7 @@ export default function TicketDetails() {
         }
         const data = await res.json();
         setTicket(data);
-        setStatus(data.status || 'new');
+        setStatus(data.status || 'open');
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -288,12 +288,12 @@ export default function TicketDetails() {
                   ? "border-blue-500 text-blue-700 bg-white"
                   : ticket.status === "closed"
                   ? "border-zinc-400 text-zinc-700 bg-white"
-                  : "border-purple-500 text-purple-700 bg-white" // default for 'new'
+                  : "border-blue-500 text-blue-700 bg-white" // default for 'open'
               }`}>
                 {ticket.status === "resolved" ? "Resolved"
                   : ticket.status === "in-progress" ? "In Progress"
                   : ticket.status === "closed" ? "Closed"
-                  : "New"}
+                  : "Open"}
               </span>
             </div>
           </div>

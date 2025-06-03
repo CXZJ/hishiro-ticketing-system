@@ -36,7 +36,7 @@ export function TicketStats({ status, priority, assignee }) {
         const tickets = await res.json();
         const stats = {
           total: tickets.length,
-          open: tickets.filter(t => t.status === 'open' || t.status === 'new').length,
+          open: tickets.filter(t => t.status === 'open').length,
           resolved: tickets.filter(t => t.status === 'resolved').length,
           inProgress: tickets.filter(t => t.status === 'in-progress').length
         };
@@ -105,7 +105,7 @@ export function TicketStats({ status, priority, assignee }) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.open}</div>
-          <p className="text-xs text-gray-500">New tickets</p>
+          <p className="text-xs text-gray-500">Open tickets</p>
         </CardContent>
       </Card>
       <Card>
