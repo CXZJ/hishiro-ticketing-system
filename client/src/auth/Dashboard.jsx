@@ -64,10 +64,9 @@ export default function Dashboard() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, getNotificationIcon, addNotification } = useNotifications();
   const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
-  const [newTicket, setNewTicket] = useState({
-    title: '',
+  const [newTicket, setNewTicket] = useState({ 
+    title: '', 
     description: '',
-    category: 'Bug',
     priority: 'Low',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -392,10 +391,14 @@ export default function Dashboard() {
 
   const handleNewTicketChange = (e) => {
     const { name, value } = e.target;
+    
+    // Handle word counting for description
     if (name === 'description') {
       const words = value.trim().split(/\s+/).filter(word => word.length > 0);
-      setWordCount(words.length);
-      if (words.length < 15) {
+      const count = value.trim() === '' ? 0 : words.length;
+      setWordCount(count);
+      
+      if (count > 0 && count < 15) {
         setDescriptionError('Description must be at least 15 words');
       } else {
         setDescriptionError('');
@@ -425,7 +428,6 @@ export default function Dashboard() {
           userId: user.uid,
           message: newTicket.description,
           subject: newTicket.title,
-          category: newTicket.category,
           priority: newTicket.priority.toLowerCase(),
           botResponse: "No bot response",
         }),
@@ -434,11 +436,12 @@ export default function Dashboard() {
       const created = await res.json();
       setTickets((prev) => [created, ...prev]);
       setShowNewTicketForm(false);
-      setNewTicket({ title: '', description: '', category: 'Bug', priority: 'Low' });
+      setNewTicket({ title: '', description: '', priority: 'Low' });
       setWordCount(0);
       setDescriptionError('');
+      toast.success('Ticket created successfully! We will review it shortly.');
     } catch (err) {
-      alert('Failed to create ticket.');
+      toast.error('Failed to create ticket. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -630,23 +633,10 @@ export default function Dashboard() {
                     </span>
                     <span className="text-sm text-gray-500">{wordCount} words</span>
                   </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <Label className="block mb-1 font-medium">Category</Label>
-                    <select name="category" value={newTicket.category} onChange={handleNewTicketChange} className="w-full border rounded-lg px-3 py-2">
-                      <option value="Bug">Bug</option>
-                      <option value="Feature Request">Feature Request</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <Label className="block mb-1 font-medium">Priority</Label>
-                    <select name="priority" value={newTicket.priority} onChange={handleNewTicketChange} className="w-full border rounded-lg px-3 py-2">
-                      <option value="Low">Low</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
-                    </select>
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      <span className="font-medium">ℹ️ Note:</span> Your ticket will be automatically categorized and prioritized by our support team based on the content you provide.
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">

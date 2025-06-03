@@ -34,14 +34,17 @@ const getTicket = async (req, res) => {
 const createTicket = async (req, res) => {
   try {
     const { userId, subject, message, botResponse, category, priority } = req.body;
-    const ticket = await Ticket.create({
+    
+    // Assign default values if not provided
+    const ticketData = {
       userId,
       subject,
       message,
       botResponse,
-      category,
-      priority,
-    });
+      priority: priority || 'medium',  // Default priority
+    };
+    
+    const ticket = await Ticket.create(ticketData);
 
     // Emit notification to all admins about new ticket
     if (req.app.get('io')) {
