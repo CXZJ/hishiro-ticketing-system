@@ -1,13 +1,28 @@
 import { API_URL } from '../config/api';
+import { auth } from '../firebase';
 
 // Generate bot response using backend API
-export const generateBotResponse = async (messages) => {
+export const generateBotResponse = async (messages, user = null) => {
   try {
+    // Get the current user if not provided
+    const currentUser = user || auth.currentUser;
+    
+    if (!currentUser) {
+      return {
+        text: "I need you to be logged in to assist you properly. Please log in and try again.",
+        needsTicket: true,
+        subject: "Authentication Required"
+      };
+    }
+
+    // Get Firebase ID token
+    const token = await currentUser.getIdToken();
+
     const response = await fetch(`${API_URL}/api/chat/generate-response`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ messages })
     });

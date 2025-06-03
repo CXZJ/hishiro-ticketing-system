@@ -74,7 +74,7 @@ export default function TicketChat() {
     const fetchTicket = async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(`/api/tickets/${ticketId}`, {
+        const res = await fetch(`${API_URL}/api/tickets/${ticketId}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -100,7 +100,7 @@ export default function TicketChat() {
     if (!user) return;
     try {
       const token = await user.getIdToken();
-      const res = await fetch(`/api/tickets/${ticketId}/messages`, {
+      const res = await fetch(`${API_URL}/api/tickets/${ticketId}/messages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -368,7 +368,7 @@ export default function TicketChat() {
       };
       setMessages(prev => [...prev, optimisticMessage]);
 
-      const res = await fetch(`/api/tickets/${ticketId}/messages`, {
+      const res = await fetch(`${API_URL}/api/tickets/${ticketId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -431,7 +431,7 @@ export default function TicketChat() {
       setMessages(prev => [...prev, optimisticMessage]);
 
       // Send via API
-      const res = await fetch(`/api/tickets/${ticketId}/user-message`, {
+      const res = await fetch(`${API_URL}/api/tickets/${ticketId}/user-message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -13,7 +13,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../firebase';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-import { getSocketUrl } from '../config/api';
+import { getSocketUrl, API_URL } from '../config/api';
 
 export default function ChatWidget({ fullPage = false, hideHeader = false, ticketId = null }) {
   const [open, setOpen] = useState(fullPage);
@@ -209,7 +209,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
       // Only process with bot if not in full page mode (ticket view)
       setIsTyping(true);
       try {
-        const response = await generateBotResponse([...messages, { from: "user", type: "text", text: txt }]);
+        const response = await generateBotResponse([...messages, { from: "user", type: "text", text: txt }], user);
         
         // Add bot response
         setMessages((prev) => [...prev, { from: "support", type: "text", text: response.text }]);
@@ -244,7 +244,7 @@ export default function ChatWidget({ fullPage = false, hideHeader = false, ticke
           };
 
           console.log('Attempting to create ticket via API');
-          const createTicketResponse = await fetch('/api/tickets', {
+          const createTicketResponse = await fetch(`${API_URL}/api/tickets`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
