@@ -166,86 +166,93 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   );
   
   // Product-specific responses
+  if (message.includes('list') || message.includes('products') || message.includes('collection') || message.includes('items')) {
+    return {
+      text: "Here are our current products:\n\n1. Signature Hishiro Urahara Cardigan (Rp 189.500 – Rp 374.000)\n2. Luffy Boxy Racing Knitted Jacket (Rp 419.000)\n3. Zoro Boxy Racing Knitted Jacket (Rp 419.000)\n4. ACE Jorts\n5. Sweater Yuta\n6. Gojo Shirt\n\nNote: Several items are currently sold out, including the Dark Kon Button-Up, Toshiro True Bankai Jacket, Ghoul Workshirt, Vagabond Corduroy Button-Up, Vagabond Sling Bag, and Vinland Saga Oversize Boxy Shirt.",
+      needsTicket: false
+    };
+  }
+  
   if (message.includes('urahara') || message.includes('cardigan')) {
     return {
-      text: "The Signature Hishiro Urahara Cardigan is a premium piece featuring 100% cotton in multicolor olive & cream. It has cream-patterned buttons, printed graphics, and an embroidered Hishiro logo. Available in sizes M (63×59cm) to XXL (71×72cm), priced from Rp 189.500 to Rp 374.000. Would you like specific information about sizing or care instructions?",
+      text: "The Signature Hishiro Urahara Cardigan is available in sizes M (63×59cm) to XXL (71×72cm), priced from Rp 189.500 to Rp 374.000. Made from 100% cotton with cream-patterned buttons and embroidered Hishiro logo.",
       needsTicket: false
     };
   }
   
   if (message.includes('kon') || message.includes('button-up')) {
     return {
-      text: "The Signature Dark Kon Button-Up is currently sold out. It features 100% Japan Drill fabric, embroidered branding, and a boxy mid-crop fit. The price was Rp 519.000. Would you like to be notified when it's back in stock or would you like to know about similar items?",
+      text: "The Signature Dark Kon Button-Up is currently sold out. It was priced at Rp 519.000 and made from 100% Japan Drill fabric with embroidered branding.",
       needsTicket: false
     };
   }
   
   if (message.includes('toshiro') || message.includes('bankai')) {
     return {
-      text: "The Y2K Toshiro True Bankai Jacket is currently sold out. It's made from 100% organic heavyweight cotton with custom hardware zipper and distressed detailing. Would you like to know about similar jacket styles we offer?",
+      text: "The Y2K Toshiro True Bankai Jacket is currently sold out. It was made from 100% organic heavyweight cotton with custom hardware zipper and distressed detailing.",
       needsTicket: false
     };
   }
   
   if (message.includes('ghoul') || message.includes('workshirt')) {
     return {
-      text: "The Y2K Ghoul Workshirt is currently sold out. It features a boxy mid-crop cut with embroidered branding and stylized ghoul artwork. The price was Rp 519.000. Would you like to explore our other workshirt designs?",
+      text: "The Y2K Ghoul Workshirt is currently sold out. It was priced at Rp 519.000 and featured a boxy mid-crop cut with embroidered branding.",
       needsTicket: false
     };
   }
   
   if (message.includes('vagabond') || message.includes('corduroy')) {
     return {
-      text: "The Signature Hishiro Vagabond Corduroy Button-Up is currently sold out. It's made from 100% cotton corduroy with patterned buttons and cotton-combed lining. Available in sizes S (61×57cm) to XXXL (72×74cm), priced from Rp 389.000 to Rp 409.000. Would you like information about similar button-up styles?",
+      text: "The Signature Hishiro Vagabond Corduroy Button-Up is currently sold out. It was priced from Rp 389.000 to Rp 409.000 and available in sizes S (61×57cm) to XXXL (72×74cm).",
       needsTicket: false
     };
   }
   
   if (message.includes('sling bag') || message.includes('vagabond bag')) {
     return {
-      text: "The Signature Hishiro Vagabond Sling Bag is currently sold out. It features an adjustable strap and Hishiro embroidery/logo, priced at Rp 229.000. Would you like to know about our other accessory options?",
+      text: "The Signature Hishiro Vagabond Sling Bag is currently sold out. It was priced at Rp 229.000 and featured an adjustable strap with Hishiro embroidery.",
       needsTicket: false
     };
   }
   
   if (message.includes('vinland') || message.includes('saga')) {
     return {
-      text: "The Signature Hishiro Vinland Saga Oversize Boxy Shirt is currently sold out. It's made from 100% cotton jersey with Vinland Saga graphics and embroidered logo. Priced from Rp 239.000 to Rp 259.000. Would you like to explore our other graphic shirt designs?",
+      text: "The Signature Hishiro Vinland Saga Oversize Boxy Shirt is currently sold out. It was priced from Rp 239.000 to Rp 259.000 and made from 100% cotton jersey.",
       needsTicket: false
     };
   }
   
   if (message.includes('luffy') || message.includes('racing')) {
     return {
-      text: "The Luffy Boxy Racing Knitted Jacket is available for Rp 419.000. It features a boxy, mid-crop silhouette and is available in sizes M, L, and XL. Would you like specific information about the design or sizing?",
+      text: "The Luffy Boxy Racing Knitted Jacket is available for Rp 419.000 in sizes M, L, and XL. It features a boxy, mid-crop silhouette.",
       needsTicket: false
     };
   }
   
   if (message.includes('zoro') || message.includes('racing jacket')) {
     return {
-      text: "The Zoro Boxy Racing Knitted Jacket is available for Rp 419.000. It features a boxy, mid-crop silhouette and is available in sizes M, L, and XL. Would you like specific information about the design or sizing?",
+      text: "The Zoro Boxy Racing Knitted Jacket is available for Rp 419.000 in sizes M, L, and XL. It features a boxy, mid-crop silhouette.",
       needsTicket: false
     };
   }
   
   if (message.includes('ace') || message.includes('jorts')) {
     return {
-      text: "The ACE Jorts are available in sizes S through XXL. Would you like specific information about the design, sizing, or care instructions?",
+      text: "The ACE Jorts are available in sizes S through XXL.",
       needsTicket: false
     };
   }
   
   if (message.includes('yuta') || message.includes('sweater')) {
     return {
-      text: "The Sweater Yuta is available in sizes S through XXL. Would you like specific information about the design, sizing, or care instructions?",
+      text: "The Sweater Yuta is available in sizes S through XXL.",
       needsTicket: false
     };
   }
   
   if (message.includes('gojo') || message.includes('shirt')) {
     return {
-      text: "The Gojo Shirt is available in sizes S through XXL. Would you like specific information about the design, sizing, or care instructions?",
+      text: "The Gojo Shirt is available in sizes S through XXL.",
       needsTicket: false
     };
   }
@@ -253,7 +260,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   // Greetings - always allow without ticket creation
   if (message.includes('hello') || message.includes('hi') || message.includes('hey') || message === '' || message.includes('help')) {
     return {
-      text: "Welcome to Hishiro.id! I'm your dedicated support assistant, here to help you with our premium anime-inspired streetwear and accessories. How may I assist you today? Whether you need information about our products, help with sizing, or have questions about your order, I'm here to provide professional support.",
+      text: "Welcome to Hishiro.id! I'm here to help you with our premium anime-inspired streetwear and accessories. How may I assist you today?",
       needsTicket: false
     };
   }
@@ -262,42 +269,42 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   if (wordCount < 15 && detailedUserMessages.length === 0) {
     if (message.includes('product') || message.includes('shirt') || message.includes('hoodie') || message.includes('merchandise') || message.includes('anime')) {
       return {
-        text: "I'd be happy to assist you with our premium anime-inspired collection. To provide you with the most accurate information, could you please share more details about the specific products you're interested in or any particular questions you have?",
+        text: "I can help you with our products. What specific item would you like to know about?",
         needsTicket: false
       };
     }
     
     if (message.includes('order') || message.includes('delivery') || message.includes('shipping') || message.includes('track')) {
       return {
-        text: "I'm here to help with your order. To assist you effectively, please provide your order number and specific details about your inquiry. This will help me give you the most accurate information about your order status.",
+        text: "I can help with your order. Please provide your order number.",
         needsTicket: false
       };
     }
     
     if (message.includes('size') || message.includes('fit') || message.includes('measurement')) {
       return {
-        text: "I understand you need assistance with sizing. To help you find the perfect fit, please let me know which specific items you're interested in and any particular sizing concerns you have.",
+        text: "I can help with sizing. Which item are you interested in?",
         needsTicket: false
       };
     }
     
     if (message.includes('return') || message.includes('refund') || message.includes('exchange')) {
       return {
-        text: "I can help you with your return or exchange request. To process this efficiently, please provide your order number and the reason for the return. This will help me guide you through our return process.",
+        text: "I can help with your return. Please provide your order number.",
         needsTicket: false
       };
     }
     
     if (message.includes('payment') || message.includes('card') || message.includes('billing') || message.includes('charge')) {
       return {
-        text: "I can assist you with payment-related inquiries. For security purposes, please provide specific details about your payment concern, and I'll guide you through the appropriate steps.",
+        text: "I can help with payment-related inquiries. What's your specific concern?",
         needsTicket: false
       };
     }
     
     // General short message
     return {
-      text: "Thank you for contacting Hishiro.id support. To provide you with the best assistance, please share more details about your inquiry. The more information you provide, the better I can help you.",
+      text: "How can I help you today?",
       needsTicket: false
     };
   }
