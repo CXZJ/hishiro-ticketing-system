@@ -20,6 +20,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
+import { API_URL } from '../../config/api';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { Chart, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, LineElement, PointElement } from 'chart.js';
 
@@ -44,22 +45,80 @@ export default function Analytics() {
   const [tickets, setTickets] = useState([]);
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('7d'); // 7d, 30d, 90d
 
   useEffect(() => {
     if (!user) return;
     const fetchTickets = async () => {
-      const token = await user.getIdToken();
-      const res = await fetch('/api/tickets', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setTickets(await res.json());
+      try {
+        setLoading(true);
+        setError(null);
+        const token = await user.getIdToken();
+        const res = await fetch(`${API_URL}/api/tickets`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Failed to fetch tickets: ${res.status}`);
+        }
+        
+        const ticketData = await res.json();
+        setTickets(ticketData);
+      } catch (err) {
+        console.error('Error fetching analytics data:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchTickets();
   }, [user]);
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Track your support team's performance</p>
+            </div>
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          </div>
+        </main>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Track your support team's performance</p>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Failed to Load Analytics</h3>
+              <p className="text-red-600">Error: {error}</p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="mt-4"
+                variant="outline"
+              >
+                Retry
+              </Button>
+            </div>
+          </div>
+        </main>
+      </AdminLayout>
+    );
+  }
 
   // Calculate advanced stats
   const total = tickets.length;

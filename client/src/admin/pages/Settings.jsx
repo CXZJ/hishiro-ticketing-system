@@ -7,9 +7,10 @@ import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
-import { Bell, Lock, User, Mail, Phone, Building, Moon } from 'lucide-react'
+import { Bell, Lock, User, Mail, Phone, Building, Moon, AlertCircle } from 'lucide-react'
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase';
+import { API_URL } from '../../config/api';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
 import AdminLayout from '../AdminLayout';
@@ -20,6 +21,7 @@ export default function Settings() {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({ username: '', gender: '', phone: '', address: '', photoURL: '' });
   const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -35,18 +37,18 @@ export default function Settings() {
 
     const fetchUserInfo = async () => {
       try {
+        setFetchError(null);
         const token = await user.getIdToken();
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         
         // Fetch user info
-        const userRes = await fetch(`${API_URL}/api/users/me`.replace(/([^:]\/)\/+/g, "$1"), {
+        const userRes = await fetch(`${API_URL}/api/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
         if (!userRes.ok) {
-          throw new Error('Failed to fetch user info');
+          throw new Error(`Failed to fetch user info: ${userRes.status} ${userRes.statusText}`);
         }
 
         const userData = await userRes.json();
@@ -59,7 +61,8 @@ export default function Settings() {
           photoURL: userData.photoURL || ''
         });
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching user data:', error);
+        setFetchError(error.message);
         setUserInfo(null);
       }
     };
@@ -102,8 +105,7 @@ export default function Settings() {
     setSaving(true);
     try {
       const token = await user.getIdToken();
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      const res = await fetch(`${API_URL}/api/users/me`.replace(/([^:]\/)\/+/g, "$1"), {
+      const res = await fetch(`${API_URL}/api/users/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -111,16 +113,26 @@ export default function Settings() {
         },
         body: JSON.stringify(editForm)
       });
-      if (!res.ok) throw new Error('Failed to update profile');
       
-      const userRes = await fetch(`${API_URL}/api/users/me`.replace(/([^:]\/)\/+/g, "$1"), {
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to update profile: ${res.status} - ${errorText}`);
+      }
+      
+      const userRes = await fetch(`${API_URL}/api/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!userRes.ok) {
+        throw new Error('Failed to fetch updated user data');
+      }
+      
       const updated = await userRes.json();
       setUserInfo(updated);
       setEditMode(false);
       toast.success('Profile updated successfully');
     } catch (err) {
+      console.error('Error updating profile:', err);
       toast.error(err.message);
     } finally {
       setSaving(false);
@@ -163,6 +175,50 @@ export default function Settings() {
     if (gender === 'male') return <span className="text-muted-foreground" style={{fontSize: '1.5rem'}}>&#9794;</span>; // ♂
     return null;
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Manage your account settings and preferences</p>
+            </div>
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          </div>
+        </main>
+      </AdminLayout>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <AdminLayout>
+        <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Manage your account settings and preferences</p>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Failed to Load Settings</h3>
+              <p className="text-red-600 mb-4">Error: {fetchError}</p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+              >
+                Retry
+              </Button>
+            </div>
+          </div>
+        </main>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

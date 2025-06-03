@@ -2,11 +2,17 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Ticket, Users, Settings, BarChart3, MessageSquare, Archive, X, LogOut, Bell, RefreshCw } from 'lucide-react'
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../../firebase';
+import { signOut } from 'firebase/auth';
+import { toast } from 'react-hot-toast';
 import logo from '../../assets/logo.png';
 
 export function Sidebar({ className = '', open = false, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [user] = useAuthState(auth);
+  
   // Menu items
   const mainMenu = [
     { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,6 +33,17 @@ export function Sidebar({ className = '', open = false, onClose }) {
     // For exact match or query param match
     if (to === '/admin') return location.pathname === '/admin';
     return location.pathname + location.search === to;
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast.success('Signed out successfully');
+      navigate('/admin/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out');
+    }
   };
 
   // Sidebar content
@@ -71,7 +88,7 @@ export function Sidebar({ className = '', open = false, onClose }) {
         {/* Logout button pinned to bottom */}
         <div className="mt-8 mb-4 xl:mb-2 px-2 mt-auto">
           <button
-            onClick={() => { navigate('/admin/login'); }}
+            onClick={handleSignOut}
             className="w-full flex items-center justify-center gap-3 text-red-500 hover:text-white border border-red-500 hover:bg-red-500/80 hover:scale-105 transition-all duration-200 px-5 py-4 rounded-xl font-semibold text-base shadow bg-white"
           >
             <LogOut className="h-5 w-5" />
