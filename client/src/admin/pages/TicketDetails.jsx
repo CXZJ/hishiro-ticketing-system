@@ -312,12 +312,31 @@ export default function TicketDetails() {
           ) : (
             <div className="space-y-4">
               {messages.map((msg, idx) => (
-                <div key={msg._id || idx} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`rounded-lg px-4 py-2 max-w-[70%] ${msg.sender === 'admin' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-800'}`}>
-                    <div className="text-xs mb-1 font-semibold">{msg.sender === 'admin' ? 'You' : 'User'}</div>
-                    <div>{msg.text}</div>
-                    <div className="text-xs opacity-60 mt-1">{msg.time ? new Date(msg.time).toLocaleString() : ''}</div>
-                  </div>
+                <div key={msg._id || idx} className={`flex ${
+                  msg.sender === 'system' ? 'justify-center' : 
+                  msg.sender === 'admin' ? 'justify-end' : 'justify-start'
+                }`}>
+                  {msg.sender === 'system' ? (
+                    // System message styling - matches client-side format
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 max-w-md">
+                      <div className="flex items-center text-yellow-800">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm font-medium">{msg.text}</span>
+                      </div>
+                      <div className="text-xs text-yellow-600 mt-1 text-center">
+                        {msg.time ? new Date(msg.time).toLocaleString() : ''}
+                      </div>
+                    </div>
+                  ) : (
+                    // Regular message styling
+                    <div className={`rounded-lg px-4 py-2 max-w-[70%] ${msg.sender === 'admin' ? 'bg-blue-100 text-blue-900' : 'bg-gray-100 text-gray-800'}`}>
+                      <div className="text-xs mb-1 font-semibold">{msg.sender === 'admin' ? 'You' : 'User'}</div>
+                      <div>{msg.text}</div>
+                      <div className="text-xs opacity-60 mt-1">{msg.time ? new Date(msg.time).toLocaleString() : ''}</div>
+                    </div>
+                  )}
                 </div>
               ))}
               <div ref={messagesEndRef} />
