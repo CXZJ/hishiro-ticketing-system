@@ -55,28 +55,103 @@ const retryGeminiCall = async (apiCall, maxRetries = 2, baseDelay = 1000) => {
 
 // Company information for context
 const companyInfo = {
-  chatbotContext: `You are a helpful customer support assistant for Hishiro.id, a trendy online store specializing in anime-inspired streetwear and accessories. 
+  chatbotContext: `You are a professional customer support assistant for Hishiro.id, a premium Indonesian e-commerce brand specializing in anime-inspired streetwear and accessories.
 
-Company Overview:
-- Name: Hishiro.id
-- Focus: Anime-inspired streetwear, clothing, and accessories
-- Target audience: Anime fans, streetwear enthusiasts, young adults
-- Products: T-shirts, hoodies, accessories, collectibles with anime themes
-- Tone: Friendly, knowledgeable, enthusiastic about anime culture
+Company Profile:
+- Brand: Hishiro.id
+- Location: Indonesia
+- Focus: Premium anime-inspired streetwear and accessories
+- Target Audience: Fashion-conscious anime enthusiasts and streetwear lovers
+- Products: High-quality t-shirts, hoodies, accessories, and collectibles with unique anime designs
+- Brand Values: Quality, Innovation, Customer Satisfaction, Anime Culture Appreciation
+
+Product Catalog:
+1. Signature Hishiro Urahara Cardigan
+   - Price: Rp 189.500 – Rp 374.000
+   - Material: 100% cotton (multicolor olive & cream)
+   - Features: Cream-patterned buttons, printed graphics, loose rib stitch, satin neck label, embroidered logo
+   - Fit: Oversize boxy mid-crop
+   - Sizes: M (63×59cm), L (66×63cm), XL (68×67cm), XXL (71×72cm)
+   - Care: Cold wash, no bleach, iron inside out, wash with similar colors
+
+2. Hishiro's Signature Dark Kon Button-Up [Pre-Order]
+   - Price: Rp 519.000
+   - Status: Sold Out
+   - Material: 100% Japan Drill fabric
+   - Features: Embroidered logo, boxy mid-crop fit, "Kon" graphics
+   - Sizes: S, M, L, XL, XXL
+   - Care: Cold wash, no bleach, iron inside out
+
+3. Hishiro's Signature Y2K Toshiro True Bankai Jacket
+   - Status: Sold Out
+   - Material: 100% organic heavyweight cotton
+   - Features: Custom hardware zipper, cut & sewn panels, distressed detailing
+   - Sizes: S, M, L, XL, XXL
+   - Care: Cold wash, no bleach, iron inside out
+
+4. Hishiro's Signature Y2K Ghoul Workshirt
+   - Price: Rp 519.000
+   - Status: Sold Out
+   - Features: Boxy mid-crop cut, embroidered branding, ghoul artwork
+   - Sizes: S, M, L, XL, XXL
+   - Care: Cold wash, no bleach, iron inside out
+
+5. Signature Hishiro Vagabond Corduroy Button-Up
+   - Price: Rp 389.000 – Rp 409.000
+   - Status: Sold Out
+   - Material: 100% cotton corduroy
+   - Features: Patterned buttons, cotton-combed lining, embroidered design
+   - Sizes: S (61×57cm) to XXXL (72×74cm)
+   - Care: Cold wash, no bleach, iron inside out
+
+6. Signature Hishiro Vagabond Sling Bag
+   - Price: Rp 229.000
+   - Status: Sold Out
+   - Features: Adjustable strap, Hishiro embroidery/logo
+
+7. Signature Hishiro Vinland Saga Oversize Boxy Shirt
+   - Price: Rp 239.000 – Rp 259.000
+   - Status: Sold Out
+   - Material: 100% cotton jersey
+   - Features: Vinland Saga graphics, embroidered logo
+   - Sizes: S, M, L, XL, XXL
+   - Care: Cold wash, no bleach, iron inside out
+
+8. Luffy Boxy Racing Knitted Jacket
+   - Price: Rp 419.000
+   - Fit: Boxy, mid-crop silhouette
+   - Sizes: M, L, XL
+
+9. Zoro Boxy Racing Knitted Jacket
+   - Price: Rp 419.000
+   - Fit: Boxy, mid-crop silhouette
+   - Sizes: M, L, XL
+
+10. ACE Jorts
+    - Available in sizes: S, M, L, XL, XXL
+
+11. Sweater Yuta
+    - Available in sizes: S, M, L, XL, XXL
+
+12. Gojo Shirt
+    - Available in sizes: S, M, L, XL, XXL
 
 Your Role:
-- Help customers with product inquiries, order questions, and general support
-- Provide information about sizing, materials, and product details
-- Assist with order status, shipping, and return policies
-- Guide users through the website and shopping process
-- Be enthusiastic about anime culture while remaining professional
+- Provide professional and knowledgeable support for all customer inquiries
+- Assist with product information, sizing guidance, and order management
+- Handle shipping inquiries, returns, and general customer service
+- Maintain a professional yet approachable tone that reflects our brand identity
+- Ensure customer satisfaction while upholding our premium service standards
 
 Guidelines:
-- Always be helpful, friendly, and professional
-- Use anime/otaku terminology when appropriate but keep it accessible
-- If you cannot resolve an issue, offer to escalate to human support
-- For complex technical issues, recommend creating a support ticket
-- Stay in character as a Hishiro.id support representative`
+- Always maintain a professional and courteous tone
+- Be knowledgeable about our products and anime culture that related to our products but doesnt mean you have to talk about anime culture if the customer didnt ask about it
+- Provide clear and accurate information about product specifications, sizes, materials, and care instructions
+- When discussing products, always mention their current availability status
+- For sold-out items, inform customers about potential restocks or similar alternatives
+- Escalate complex issues to human support when necessary
+- Create support tickets for detailed inquiries requiring personalized attention
+- Stay true to Hishiro.id's brand voice and values`
 };
 
 // Simple rule-based responses when Gemini is not available
@@ -90,10 +165,95 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
     msg.text.trim().split(/\s+/).length >= 15
   );
   
+  // Product-specific responses
+  if (message.includes('urahara') || message.includes('cardigan')) {
+    return {
+      text: "The Signature Hishiro Urahara Cardigan is a premium piece featuring 100% cotton in multicolor olive & cream. It has cream-patterned buttons, printed graphics, and an embroidered Hishiro logo. Available in sizes M (63×59cm) to XXL (71×72cm), priced from Rp 189.500 to Rp 374.000. Would you like specific information about sizing or care instructions?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('kon') || message.includes('button-up')) {
+    return {
+      text: "The Signature Dark Kon Button-Up is currently sold out. It features 100% Japan Drill fabric, embroidered branding, and a boxy mid-crop fit. The price was Rp 519.000. Would you like to be notified when it's back in stock or would you like to know about similar items?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('toshiro') || message.includes('bankai')) {
+    return {
+      text: "The Y2K Toshiro True Bankai Jacket is currently sold out. It's made from 100% organic heavyweight cotton with custom hardware zipper and distressed detailing. Would you like to know about similar jacket styles we offer?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('ghoul') || message.includes('workshirt')) {
+    return {
+      text: "The Y2K Ghoul Workshirt is currently sold out. It features a boxy mid-crop cut with embroidered branding and stylized ghoul artwork. The price was Rp 519.000. Would you like to explore our other workshirt designs?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('vagabond') || message.includes('corduroy')) {
+    return {
+      text: "The Signature Hishiro Vagabond Corduroy Button-Up is currently sold out. It's made from 100% cotton corduroy with patterned buttons and cotton-combed lining. Available in sizes S (61×57cm) to XXXL (72×74cm), priced from Rp 389.000 to Rp 409.000. Would you like information about similar button-up styles?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('sling bag') || message.includes('vagabond bag')) {
+    return {
+      text: "The Signature Hishiro Vagabond Sling Bag is currently sold out. It features an adjustable strap and Hishiro embroidery/logo, priced at Rp 229.000. Would you like to know about our other accessory options?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('vinland') || message.includes('saga')) {
+    return {
+      text: "The Signature Hishiro Vinland Saga Oversize Boxy Shirt is currently sold out. It's made from 100% cotton jersey with Vinland Saga graphics and embroidered logo. Priced from Rp 239.000 to Rp 259.000. Would you like to explore our other graphic shirt designs?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('luffy') || message.includes('racing')) {
+    return {
+      text: "The Luffy Boxy Racing Knitted Jacket is available for Rp 419.000. It features a boxy, mid-crop silhouette and is available in sizes M, L, and XL. Would you like specific information about the design or sizing?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('zoro') || message.includes('racing jacket')) {
+    return {
+      text: "The Zoro Boxy Racing Knitted Jacket is available for Rp 419.000. It features a boxy, mid-crop silhouette and is available in sizes M, L, and XL. Would you like specific information about the design or sizing?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('ace') || message.includes('jorts')) {
+    return {
+      text: "The ACE Jorts are available in sizes S through XXL. Would you like specific information about the design, sizing, or care instructions?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('yuta') || message.includes('sweater')) {
+    return {
+      text: "The Sweater Yuta is available in sizes S through XXL. Would you like specific information about the design, sizing, or care instructions?",
+      needsTicket: false
+    };
+  }
+  
+  if (message.includes('gojo') || message.includes('shirt')) {
+    return {
+      text: "The Gojo Shirt is available in sizes S through XXL. Would you like specific information about the design, sizing, or care instructions?",
+      needsTicket: false
+    };
+  }
+  
   // Greetings - always allow without ticket creation
   if (message.includes('hello') || message.includes('hi') || message.includes('hey') || message === '' || message.includes('help')) {
     return {
-      text: "Hello! Welcome to Hishiro.id! I'm here to help you with our anime-inspired streetwear and accessories. How can I assist you today? Whether you're looking for the perfect anime tee, need sizing help, or have questions about your order, I'm here to help!",
+      text: "Welcome to Hishiro.id! I'm your dedicated support assistant, here to help you with our premium anime-inspired streetwear and accessories. How may I assist you today? Whether you need information about our products, help with sizing, or have questions about your order, I'm here to provide professional support.",
       needsTicket: false
     };
   }
@@ -102,42 +262,42 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   if (wordCount < 15 && detailedUserMessages.length === 0) {
     if (message.includes('product') || message.includes('shirt') || message.includes('hoodie') || message.includes('merchandise') || message.includes('anime')) {
       return {
-        text: "I'd love to help you with our anime-inspired products! To give you the best assistance, could you please describe in more detail what specific products you're looking for, what questions you have, or any issues you're experiencing? The more details you provide, the better I can help you!",
+        text: "I'd be happy to assist you with our premium anime-inspired collection. To provide you with the most accurate information, could you please share more details about the specific products you're interested in or any particular questions you have?",
         needsTicket: false
       };
     }
     
     if (message.includes('order') || message.includes('delivery') || message.includes('shipping') || message.includes('track')) {
       return {
-        text: "I'm here to help with your order! To assist you effectively, could you please provide more details about your specific concern? For example, what's your order number, what issue are you experiencing, or what information do you need?",
+        text: "I'm here to help with your order. To assist you effectively, please provide your order number and specific details about your inquiry. This will help me give you the most accurate information about your order status.",
         needsTicket: false
       };
     }
     
     if (message.includes('size') || message.includes('fit') || message.includes('measurement')) {
       return {
-        text: "Sizing is super important for our anime streetwear! To help you get the perfect fit, could you tell me more about what specific items you're interested in, what size concerns you have, or if you're having issues with a current order?",
+        text: "I understand you need assistance with sizing. To help you find the perfect fit, please let me know which specific items you're interested in and any particular sizing concerns you have.",
         needsTicket: false
       };
     }
     
     if (message.includes('return') || message.includes('refund') || message.includes('exchange')) {
       return {
-        text: "I understand you need help with a return or exchange. To best assist you, could you please provide more details about your situation? What item needs to be returned, when was it purchased, and what's the reason for the return?",
+        text: "I can help you with your return or exchange request. To process this efficiently, please provide your order number and the reason for the return. This will help me guide you through our return process.",
         needsTicket: false
       };
     }
     
     if (message.includes('payment') || message.includes('card') || message.includes('billing') || message.includes('charge')) {
       return {
-        text: "I can help with payment-related questions. For your security and to provide the best assistance, could you please describe your specific payment concern in more detail? What issue are you experiencing?",
+        text: "I can assist you with payment-related inquiries. For security purposes, please provide specific details about your payment concern, and I'll guide you through the appropriate steps.",
         needsTicket: false
       };
     }
     
     // General short message
     return {
-      text: "I'm here to help! To provide you with the best assistance, could you please describe your question or issue in a bit more detail? The more information you can share, the better I can help you with your Hishiro.id inquiry.",
+      text: "Thank you for contacting Hishiro.id support. To provide you with the best assistance, please share more details about your inquiry. The more information you provide, the better I can help you.",
       needsTicket: false
     };
   }
@@ -145,7 +305,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   // User has provided sufficient detail, now we can create tickets
   if (message.includes('product') || message.includes('shirt') || message.includes('hoodie') || message.includes('merchandise') || message.includes('anime')) {
     return {
-      text: "Thank you for the detailed information about your product inquiry! I understand you're interested in our anime-inspired collection. Let me create a support ticket so our team can provide you with complete product details, sizing charts, availability, and help you find the perfect items for your style!",
+      text: "Thank you for your detailed product inquiry. I'll create a support ticket so our team can provide you with comprehensive information about our products, including availability, sizing charts, and specific details about the items you're interested in.",
       needsTicket: true,
       subject: "Product Information Request"
     };
@@ -153,7 +313,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   
   if (message.includes('order') || message.includes('delivery') || message.includes('shipping') || message.includes('track')) {
     return {
-      text: "Thanks for providing those details about your order inquiry! I can see you need assistance with order-related questions. Let me create a support ticket so our team can look up your specific order details and provide you with the exact information you need.",
+      text: "Thank you for providing those details about your order. I'll create a support ticket so our team can look up your specific order information and provide you with accurate status updates and assistance.",
       needsTicket: true,
       subject: "Order & Shipping Inquiry"
     };
@@ -161,7 +321,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   
   if (message.includes('size') || message.includes('fit') || message.includes('measurement')) {
     return {
-      text: "Perfect! Thank you for the detailed sizing question. Getting the right fit is crucial for our anime streetwear. Let me create a support ticket so our team can provide you with detailed sizing charts, measurements, and personalized fit recommendations for the items you're interested in.",
+      text: "Thank you for your detailed sizing inquiry. I'll create a support ticket so our team can provide you with precise sizing charts and personalized fit recommendations for the items you're interested in.",
       needsTicket: true,
       subject: "Sizing & Fit Assistance"
     };
@@ -169,7 +329,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   
   if (message.includes('return') || message.includes('refund') || message.includes('exchange') || message.includes('wrong size')) {
     return {
-      text: "I understand your return/exchange situation from your description. Let me create a support ticket so our team can review your specific case, check our return policy for your situation, and guide you through the process step by step.",
+      text: "I understand your return/exchange request. I'll create a support ticket so our team can review your case and guide you through our return process, ensuring a smooth resolution to your request.",
       needsTicket: true,
       subject: "Return & Exchange Request"
     };
@@ -177,7 +337,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   
   if (message.includes('payment') || message.includes('card') || message.includes('billing') || message.includes('charge')) {
     return {
-      text: "Thank you for explaining your payment concern. For security reasons and to properly address your billing question, let me create a support ticket so our team can safely assist you with your payment inquiry.",
+      text: "Thank you for explaining your payment concern. I'll create a support ticket so our team can securely assist you with your payment inquiry and ensure your transaction is handled properly.",
       needsTicket: true,
       subject: "Payment & Billing Support"
     };
@@ -186,7 +346,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   // For any detailed message (15+ words) that doesn't fit other categories
   if (wordCount >= 15 || detailedUserMessages.length > 0) {
     return {
-      text: "Thank you for providing that detailed information! I can see you have a specific question that would benefit from personalized assistance. Let me create a support ticket so our team can give you the detailed attention your inquiry deserves.",
+      text: "Thank you for providing those details. I'll create a support ticket so our team can give your inquiry the attention it deserves and provide you with a comprehensive response.",
       needsTicket: true,
       subject: "Detailed Customer Inquiry"
     };
@@ -194,7 +354,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   
   // Default response for short messages without enough context
   return {
-    text: "Thank you for reaching out to Hishiro.id! I'm here to help with questions about our anime-inspired streetwear, orders, sizing, returns, and more. To provide the best assistance, could you please tell me more about what you need help with?",
+    text: "Thank you for contacting Hishiro.id support. I'm here to assist you with any questions about our premium anime-inspired streetwear, orders, sizing, returns, or other inquiries. Please let me know how I can help you today.",
     needsTicket: false
   };
 };
@@ -209,7 +369,8 @@ const shouldCreateTicket = (response) => {
     "needs human intervention",
     "escalate to support",
     "contact support team",
-    "create support ticket"
+    "create support ticket",
+    "complex issue",
   ];
   
   return ticketKeywords.some(keyword => 

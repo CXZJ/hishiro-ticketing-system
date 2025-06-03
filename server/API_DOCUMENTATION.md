@@ -43,6 +43,7 @@ Authorization: Bearer <your-firebase-jwt-token>
 1. Register/Login through the frontend application
 2. Firebase will provide a JWT token
 3. Use this token in your API requests
+4. Token can be found inside browser console
 
 ## 📚 API Documentation
 
@@ -266,18 +267,3 @@ curl -X POST http://localhost:5001/api/tickets \
     "botResponse": "Thank you for contacting us"
   }'
 ```
-
-## 📞 Support
-
-If you need help with the API:
-- 📧 Email: support@hishiro.com
-- 📱 Discord: [Join our server](https://discord.gg/hishiro)
-- 🐛 Issues: [GitHub Issues](https://github.com/hishiro/ticketing-system/issues)
-
-## 📄 License
-
-This API is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-**Happy coding! 🚀** 
