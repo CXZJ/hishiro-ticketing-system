@@ -70,6 +70,3 @@ docker-compose down
 └── docker-compose.yml  # Docker orchestration
 ```
 
-## 📄 License
-
-MIT License - see individual component READMEs for more details.
