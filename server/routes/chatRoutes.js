@@ -155,7 +155,7 @@ Guidelines:
 };
 
 // Simple rule-based responses when Gemini is not available
-const getSimpleResponse = (userMessage, conversationHistory = []) => {
+const getSimpleResponse = (userMessage, conversationHistory = [], hasGreeted = false) => {
   const message = userMessage.toLowerCase();
   const wordCount = userMessage.trim().split(/\s+/).length;
   
@@ -163,6 +163,11 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   const detailedUserMessages = conversationHistory.filter(msg => 
     msg.from === "user" && 
     msg.text.trim().split(/\s+/).length >= 15
+  );
+  
+  // Check if greeting was already sent in this conversation
+  const alreadyGreeted = hasGreeted || conversationHistory.some(msg =>
+    msg.from === 'support' && msg.text && msg.text.includes("Welcome to Hishiro.id!")
   );
   
   // Product-specific responses
@@ -257,8 +262,8 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
     };
   }
   
-  // Greetings - always allow without ticket creation
-  if (message.includes('hello') || message.includes('hi') || message.includes('hey') || message === '' || message.includes('help')) {
+  // Greetings - only allow if not already greeted
+  if (!alreadyGreeted && (message.includes('hello') || message.includes('hi') || message.includes('hey') || message === '' || message.includes('help'))) {
     return {
       text: "Welcome to Hishiro.id! I'm here to help you with our premium anime-inspired streetwear and accessories. How may I assist you today?",
       needsTicket: false
@@ -361,7 +366,7 @@ const getSimpleResponse = (userMessage, conversationHistory = []) => {
   
   // Default response for short messages without enough context
   return {
-    text: "Thank you for contacting Hishiro.id support. I'm here to assist you with any questions about our premium anime-inspired streetwear, orders, sizing, returns, or other inquiries. Please let me know how I can help you today.",
+    text: alreadyGreeted ? "How can I help you today?" : "Thank you for contacting Hishiro.id support. I'm here to assist you with any questions about our premium anime-inspired streetwear, orders, sizing, returns, or other inquiries. Please let me know how I can help you today.",
     needsTicket: false
   };
 };
@@ -481,7 +486,11 @@ router.post('/generate-response', protect, async (req, res) => {
     // Check if Gemini is available
     if (!isGeminiAvailable()) {
       console.log('Gemini API not available, using simple responses');
-      const response = getSimpleResponse(lastUserMessage.text, messages);
+      // Only greet if this is the first user message
+      const hasGreeted = messages.some(msg =>
+        msg.from === 'support' && msg.text && msg.text.includes("Welcome to Hishiro.id!")
+      );
+      const response = getSimpleResponse(lastUserMessage.text, messages, hasGreeted);
       return res.json(response);
     }
 
